@@ -1170,6 +1170,26 @@ class ArcEndZoomTests(_Isolated):
         x1 = W / 2 + k * (self.HERD[2][0] - W / 2)
         self.assertGreater(x1, 0.04 * W, "the followed zebra was zoomed out of the picture")
 
+    def test_25c_the_view_widens_before_a_walking_animal_reaches_the_edge(self):
+        """Held at the arc end, a zebra walks toward the picture's edge ~70 px per result: the
+        zoom must widen while it is still inside, not once it is already cut off."""
+        cam = SimCamera(pan=0.7291, tilt=-1.0, zoom=0.2)
+        tracker = PTZTracker(cam)
+        tracker.observation_patrol = None
+        first_out_x1 = None
+        for i in range(11):
+            x1 = 700 - 70 * i
+            z_before = cam.zoom
+            tracker.pose_hint = cam.get_pose()
+            tracker.update([animal([x1, 500, x1 + 110, 600], tid=7, species="plains zebra")], W, H,
+                           fresh=True, now=100.0 + 5.0 * i, capture_pose=cam.get_pose())
+            if cam.zoom < z_before:
+                first_out_x1 = x1
+                break
+        self.assertIsNotNone(first_out_x1, "never widened for an animal walking out at the arc end")
+        self.assertGreater(first_out_x1, config.BOUNDARY_LEAVE_MARGIN * W,
+                           "widened only once the animal was already at the edge")
+
     def test_25b_a_zebra_walking_out_at_the_arc_end_widens_the_view(self):
         herd = [[30, 500, 120, 580]]                       # the followed animal at the picture's edge
         cam, tracker, zooms = self.run_herd(herd, results=3, zoom=0.2, lock=0)
