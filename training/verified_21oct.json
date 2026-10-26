@@ -1,0 +1,383 @@
+{
+ "created": "2026-10-22",
+ "checked_by": "visual review of each crop (21-22/10)",
+ "items": [
+  {
+   "review": "logs/review/20261019T132002_265463Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T133309_416068Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T134852_330699Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T141916_980240Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T142620_071278Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T143150_654563Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T153725_553984Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T203929_713770Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T215445_847146Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T234444_228143Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T235442_682086Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T001346_229271Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T004348_055971Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T005658_755609Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T030436_497825Z_candidate.json",
+   "verdict": "animal",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T033558_788219Z_candidate.json",
+   "verdict": "animal",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T035132_908608Z_candidate.json",
+   "verdict": "bird",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T115146_368062Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T122150_283512Z_candidate.json",
+   "verdict": "animal",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T122220_317636Z_candidate.json",
+   "verdict": "animal",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T123040_672311Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T124025_938602Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T124149_558806Z_candidate.json",
+   "verdict": "bird",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T124412_465784Z_candidate.json",
+   "verdict": "bird",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T131047_726431Z_candidate.json",
+   "verdict": "animal",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T131221_014870Z_candidate.json",
+   "verdict": "animal",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T135929_160706Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T141858_843194Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T142855_517084Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261020T161952_000432Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261021T035917_291653Z_candidate.json",
+   "verdict": "animal",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261021T063845_489382Z_candidate.json",
+   "verdict": "no",
+   "set": "sweep stops 19-21/10"
+  },
+  {
+   "review": "logs/review/20261019T150723_140845Z_candidate.json",
+   "verdict": "animal",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T151255_218870Z_candidate.json",
+   "verdict": "animal",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T151713_057073Z_candidate.json",
+   "verdict": "animal",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T152415_572548Z_candidate.json",
+   "verdict": "animal",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T152538_360509Z_candidate.json",
+   "verdict": "animal",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T154132_595321Z_candidate.json",
+   "verdict": "no",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T154245_840878Z_candidate.json",
+   "verdict": "no",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T154456_393789Z_candidate.json",
+   "verdict": "no",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T204919_267653Z_candidate.json",
+   "verdict": "no",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T212631_457991Z_candidate.json",
+   "verdict": "no",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T213009_363035Z_candidate.json",
+   "verdict": "no",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261020T000846_762780Z_candidate.json",
+   "verdict": "no",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261020T110538_402722Z_candidate.json",
+   "verdict": "animal",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261020T140932_662897Z_candidate.json",
+   "verdict": "animal",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261020T154846_546857Z_candidate.json",
+   "verdict": "bird",
+   "set": "named candidates"
+  },
+  {
+   "review": "logs/review/20261019T133435_077019Z_candidate.json",
+   "verdict": "no",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T141704_347593Z_candidate.json",
+   "verdict": "bird",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T141751_265006Z_candidate.json",
+   "verdict": "bird",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T142354_998284Z_candidate.json",
+   "verdict": "bird",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T142459_504175Z_candidate.json",
+   "verdict": "no",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T152449_711653Z_candidate.json",
+   "verdict": "animal",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T152632_407709Z_candidate.json",
+   "verdict": "animal",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T153820_973185Z_candidate.json",
+   "verdict": "animal",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T203446_653192Z_candidate.json",
+   "verdict": "no",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261019T215659_915167Z_candidate.json",
+   "verdict": "no",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261020T001403_673002Z_candidate.json",
+   "verdict": "no",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261020T132143_351339Z_candidate.json",
+   "verdict": "animal",
+   "set": "unidentified candidates"
+  },
+  {
+   "review": "logs/review/20261020T161011_544297Z_candidate.json",
+   "verdict": "no",
+   "set": "unidentified candidates"
+  },
+  {
+   "image": "training_data/missed/20261019T075443_baboon_z0.160.png",
+   "box": [
+    1597.3,
+    303.2,
+    1617.6,
+    331.7
+   ],
+   "verdict": "animal",
+   "set": "operator-saved missed primates (box checked by eye)"
+  },
+  {
+   "image": "training_data/missed/20261020T140138_missed.jpg",
+   "box": [
+    1028.1,
+    476.5,
+    1061.1,
+    523.1
+   ],
+   "verdict": "animal",
+   "set": "operator-saved missed primates (box checked by eye)"
+  },
+  {
+   "image": "training_data/missed/20261020T140205_missed.jpg",
+   "box": [
+    1028.8,
+    479.7,
+    1102.0,
+    523.9
+   ],
+   "verdict": "animal",
+   "set": "operator-saved missed primates (box checked by eye)"
+  },
+  {
+   "image": "training_data/missed/20261020T140209_missed.jpg",
+   "box": [
+    1007.0,
+    495.7,
+    1080.7,
+    540.4
+   ],
+   "verdict": "animal",
+   "set": "operator-saved missed primates (box checked by eye)"
+  },
+  {
+   "image": "training_data/missed/20261020T140210_missed.jpg",
+   "box": [
+    1007.5,
+    497.6,
+    1039.5,
+    537.4
+   ],
+   "verdict": "animal",
+   "set": "operator-saved missed primates (box checked by eye)"
+  },
+  {
+   "image": "training_data/missed/20261020T140212_missed.jpg",
+   "box": [
+    1006.2,
+    497.6,
+    1042.5,
+    537.9
+   ],
+   "verdict": "animal",
+   "set": "operator-saved missed primates (box checked by eye)"
+  },
+  {
+   "image": "training_data/missed/20261020T140213_missed.jpg",
+   "box": [
+    1006.4,
+    497.9,
+    1038.1,
+    537.7
+   ],
+   "verdict": "animal",
+   "set": "operator-saved missed primates (box checked by eye)"
+  }
+ ]
+}

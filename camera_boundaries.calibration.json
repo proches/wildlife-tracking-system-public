@@ -1,0 +1,39 @@
+{
+  "left": {
+    "pan": 0.724916637,
+    "tilt": -1.0,
+    "zoom": 0.0276842117,
+    "measured_at": "2026-09-28T11:29:48.285357+00:00",
+    "confirmed_by_user": true
+  },
+  "center": {
+    "pan": 0.476055562,
+    "tilt": -1.0,
+    "zoom": 0.01136842,
+    "measured_at": "2026-09-28T11:32:45.805736+00:00",
+    "confirmed_by_user": true
+  },
+  "right": {
+    "pan": 0.239861116,
+    "tilt": -0.969555557,
+    "zoom": 0.01136842,
+    "measured_at": "2026-09-28T11:38:30.674789+00:00",
+    "confirmed_by_user": true
+  },
+  "water_hole": {
+    "pan": 0.7275,
+    "tilt": -1.0,
+    "zoom": 0.145,
+    "measured_at": "2026-10-16T08:20:00+00:00",
+    "confirmed_by_user": true,
+    "note": "Pose the user aimed at the water-hole on 2026-10-16 (14.8x). Pan values are GetStatus (reported) frame; this camera has EFlip=ON so commands are mirrored - handled in camera/onvif_camera.py."
+  },
+  "water_hole_v2_2026_09_29": {
+    "pan": 0.729416668,
+    "tilt": -1.0,
+    "zoom": 0.32,
+    "measured_at": "2026-09-29T05:55:34.364003+00:00",
+    "confirmed_by_user": true,
+    "note": "User-verified safe wildlife area; closer zoom for distant camera; arc high end 0.735"
+  }
+}

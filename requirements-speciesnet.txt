@@ -1,0 +1,9 @@
+# Requires Python >=3.9,<3.14; use Python 3.11 for this project.
+# On this machine: source .venv-speciesnet/bin/activate
+# Optional extra for the SpeciesNet classifier (2,000+ species incl. birds).
+# Kept separate on purpose: installing it can change versions of shared
+# packages (torch, numpy...), so back up your working setup first:
+#   pip freeze > working-freeze.txt
+#   pip install --dry-run speciesnet      (preview what it would change)
+#   pip install -r requirements-speciesnet.txt
+speciesnet

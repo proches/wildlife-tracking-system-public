@@ -1,0 +1,4 @@
+- [SUNBA camera quirks](sunba-camera-quirks.md) — EFlip mirrored pan, tilt clamp/presets, zoom ignores speed (glide), stream set to 15 fps 18/10
+- [Wildlife tracker hardware](wildlife-tracker-hardware.md) — CPU-only i5, .venv313 (py3.13 + SpeciesNet) runtime, backups, Swahili
+- [Detection/tracking evidence](detection-tracking-evidence.md) — 20-21/10: AI 4-5.5 s/result, MD threshold eval (keep 0.35), recovery-hold + 42-min lock bugs, round-2 model rejected (primates need hand labels)
+- [Night training jobs](night-training-jobs.md) — round 3 tasks, hidden launcher, 06:00 watchdog, measured training rates, why 22/10 night failed

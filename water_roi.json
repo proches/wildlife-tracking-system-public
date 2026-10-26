@@ -1,0 +1,57 @@
+{
+  "zones": [
+    {
+      "name": "water_preset",
+      "pose": {
+        "pan": 0.7249,
+        "tilt": -1.0,
+        "zoom": 0.2193
+      },
+      "polygon": [
+        [
+          0.02,
+          0.38
+        ],
+        [
+          0.7,
+          0.38
+        ],
+        [
+          0.72,
+          0.6
+        ],
+        [
+          0.02,
+          0.6
+        ]
+      ]
+    },
+    {
+      "name": "water_close",
+      "pose": {
+        "pan": 0.7249,
+        "tilt": -1.0,
+        "zoom": 0.42
+      },
+      "polygon": [
+        [
+          0,
+          0.2752
+        ],
+        [
+          0.8747,
+          0.2752
+        ],
+        [
+          0.9121,
+          0.6873
+        ],
+        [
+          0,
+          0.6873
+        ]
+      ]
+    }
+  ],
+  "note": "18/10: water centred in preset 1 (tools/center_water_preset.py); polygon = mud pan + water"
+}

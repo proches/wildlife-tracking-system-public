@@ -1,0 +1,112 @@
+{
+  "weights": "runs\\detect\\runs\\wildlife\\melia_v4_20261025\\weights\\epoch4.pt",
+  "map50": 0.734,
+  "per_class": {
+    "animal": {
+      "precision": 0.851,
+      "recall": 0.684,
+      "map50": 0.728
+    },
+    "bird": {
+      "precision": 0.897,
+      "recall": 0.675,
+      "map50": 0.74
+    }
+  },
+  "by_source": {
+    "site": {
+      "map50": 0.438,
+      "per_class": {
+        "animal": {
+          "precision": 0.92,
+          "recall": 0.73,
+          "map50": 0.814
+        },
+        "bird": {
+          "precision": 0.213,
+          "recall": 0.25,
+          "map50": 0.061
+        }
+      }
+    },
+    "lila": {
+      "map50": 0.717,
+      "per_class": {
+        "animal": {
+          "precision": 0.849,
+          "recall": 0.645,
+          "map50": 0.683
+        },
+        "bird": {
+          "precision": 0.873,
+          "recall": 0.705,
+          "map50": 0.75
+        }
+      }
+    }
+  },
+  "site_empty_tiles": 1354,
+  "site_empty_tiles_with_false_box": 114,
+  "site_animal_tiles": 418,
+  "site_animal_tiles_found": 374,
+  "checked_at": "2026-10-26T04:46:30",
+  "baseline": {
+    "weights": "models/melia_wildlife.pt",
+    "map50": 0.712,
+    "per_class": {
+      "animal": {
+        "precision": 0.838,
+        "recall": 0.668,
+        "map50": 0.688
+      },
+      "bird": {
+        "precision": 0.862,
+        "recall": 0.688,
+        "map50": 0.736
+      }
+    },
+    "by_source": {
+      "site": {
+        "map50": 0.344,
+        "per_class": {
+          "animal": {
+            "precision": 0.742,
+            "recall": 0.715,
+            "map50": 0.673
+          },
+          "bird": {
+            "precision": 0.051,
+            "recall": 0.25,
+            "map50": 0.015
+          }
+        }
+      },
+      "lila": {
+        "map50": 0.718,
+        "per_class": {
+          "animal": {
+            "precision": 0.876,
+            "recall": 0.654,
+            "map50": 0.692
+          },
+          "bird": {
+            "precision": 0.876,
+            "recall": 0.697,
+            "map50": 0.743
+          }
+        }
+      }
+    },
+    "site_empty_tiles": 1354,
+    "site_empty_tiles_with_false_box": 121,
+    "site_animal_tiles": 418,
+    "site_animal_tiles_found": 332
+  },
+  "vs_baseline": {
+    "site_recall_not_worse": true,
+    "map50_not_worse": true,
+    "vegetation_not_worse": true,
+    "site_map50_not_worse": true
+  },
+  "accepted": true
+}

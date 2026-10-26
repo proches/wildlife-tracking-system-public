@@ -1,0 +1,35 @@
+# secrets: camera password, YouTube key - only .env.example goes to GitHub
+.env
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# logs: 12 GB of highlight videos and review frames from the lodge camera (privacy, size)
+logs/*
+!logs/.gitkeep
+# ...except what the system LEARNED and reads at start, and the detection history
+!logs/ptz_capabilities.json
+!logs/static_false_positives.json
+!logs/camera_encoder_backup.json
+!logs/events.csv
+!logs/detections.csv
+
+# models: the site model (5 MB) and MegaDetector (49 MB, < GitHub's 100 MB limit) ARE kept;
+# backups made by finalize_model.py and exports are not
+models/melia_wildlife_before_*.pt
+models/*.pt.tmp
+models/*.onnx
+
+runs/
+# Claude Code: the project's hook settings are kept, its lock files and personal overrides not
+.claude/*.lock
+.claude/settings.local.json
+.venv/
+.venv-*/
+.venv313/
+
+# training data: about 8 GB.  LILA Snapshot Serengeti can be downloaded again
+# (training/build_lila_serengeti.py); keep only the small hand-checked set
+training_data/*
+!training_data/site3v/

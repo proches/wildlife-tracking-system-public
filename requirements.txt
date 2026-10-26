@@ -1,0 +1,13 @@
+PytorchWildlife
+opencv-python
+onvif-zeep-async
+httpx
+supervision
+numpy
+# PytorchWildlife's __init__ eagerly imports its (unused-by-us) bioacoustics
+# module, which needs these even though this project never processes audio:
+soundfile
+librosa
+pyyaml
+torchmetrics
+pytorch-lightning

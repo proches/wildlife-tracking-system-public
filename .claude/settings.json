@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"C:/Users/Melia Serengeti User/Desktop/wildlife_tracker/.venv313/Scripts/python.exe\" \"C:/Users/Melia Serengeti User/Desktop/wildlife_tracker/tools/git_autosync.py\" --reason claude-session",
+            "timeout": 900,
+            "async": true,
+            "statusMessage": "Pushing changes to GitHub"
+          }
+        ]
+      }
+    ]
+  }
+}

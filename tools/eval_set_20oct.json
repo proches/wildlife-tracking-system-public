@@ -1,0 +1,266 @@
+{
+ "created": "2026-10-20",
+ "note": "missed = the operator saw animals the AI missed (vervet monkeys / a baboon in shade, 16-41x); animal = confirmed animals; negative = empty scenes",
+ "frames": [
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T141741_781729Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T150719_737656Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T150751_158859Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T150808_371541Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T150836_831379Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T150859_545941Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T150929_177817Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T150948_751214Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151018_336363Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151034_749470Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151108_739043Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151125_467902Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151156_284530Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151302_335151Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151306_081599Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151350_808151Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151405_484372Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151407_847688Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151420_655591Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151446_597908Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T151517_553906Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T152426_872676Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T152440_373568Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T152511_110487Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T153752_299026Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T182859_980157Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261019T220119_841243Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261020T013331_263613Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261020T030445_587419Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261020T031559_490232Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261020T111155_390967Z_animal.jpg"
+  },
+  {
+   "kind": "animal",
+   "path": "logs/review/20261020T124200_963809Z_animal.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261019T075443_baboon_z0.160.png"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261019T171642_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140121_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140124_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140128_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140138_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140141_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140205_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140208_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140209_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140210_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140212_missed.jpg"
+  },
+  {
+   "kind": "missed",
+   "path": "training_data/missed/20261020T140213_missed.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261018T021615_973907Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261018T083636_517907Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261018T090846_959029Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261018T124353_649409Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261018T140413_785027Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T001721_342065Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T093526_365626Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T100540_991662Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T132131_335679Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T150733_732400Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T164949_404927Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T184035_534900Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T194059_562668Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261019T232208_992671Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261020T013303_075906Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261020T015314_969808Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261020T023329_461007Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261020T024332_142082Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261020T110051_593779Z_negative_sample.jpg"
+  },
+  {
+   "kind": "negative",
+   "path": "logs/review/20261020T112900_647648Z_negative_sample.jpg"
+  }
+ ]
+}

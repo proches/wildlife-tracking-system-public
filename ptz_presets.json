@@ -1,0 +1,78 @@
+{
+  "water_hole": {
+    "token": "1",
+    "pan": 0.7249,
+    "zoom": 0.2193
+  },
+  "scan_2": {
+    "token": "2",
+    "pan": 0.6244,
+    "zoom": 0.03
+  },
+  "scan_3": {
+    "token": "3",
+    "pan": 0.5559,
+    "zoom": 0.03
+  },
+  "scan_4": {
+    "token": "4",
+    "pan": 0.4874,
+    "zoom": 0.03
+  },
+  "scan_5": {
+    "token": "5",
+    "pan": 0.4189,
+    "zoom": 0.03
+  },
+  "scan_6": {
+    "token": "6",
+    "pan": 0.385,
+    "zoom": 0.03
+  },
+  "scan_7": {
+    "token": "7",
+    "pan": 0.2818,
+    "zoom": 0.03
+  },
+  "water_wide": {
+    "token": "8",
+    "pan": 0.7249,
+    "zoom": 0.03
+  },
+  "baboon_spot": {
+    "token": "9",
+    "pan": 0.345,
+    "zoom": 0.05,
+    "tilt": -0.7978
+  },
+  "low_2": {
+    "token": "10",
+    "pan": 0.6244,
+    "zoom": 0.03,
+    "tilt": -0.9302
+  },
+  "low_3": {
+    "token": "11",
+    "pan": 0.5559,
+    "zoom": 0.03,
+    "tilt": -0.9
+  },
+  "low_4": {
+    "token": "12",
+    "pan": 0.4874,
+    "zoom": 0.03,
+    "tilt": -0.9
+  },
+  "low_5": {
+    "token": "13",
+    "pan": 0.4189,
+    "zoom": 0.03,
+    "tilt": -0.8
+  },
+  "low_7": {
+    "token": "15",
+    "pan": 0.2818,
+    "zoom": 0.03,
+    "tilt": -0.8002
+  }
+}

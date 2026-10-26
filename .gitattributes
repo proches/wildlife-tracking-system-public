@@ -1,0 +1,8 @@
+# Windows scripts must keep CRLF on every checkout (cmd misreads labels in LF .bat files)
+*.bat text eol=crlf
+*.vbs text eol=crlf
+# Task Scheduler exports are UTF-16: never convert them
+deploy/windows-tasks/*.xml binary
+*.pt binary
+*.jpg binary
+*.png binary
