@@ -100,7 +100,8 @@ class AcquireAndCentreTests(_Isolated):
             cam.advance(0.125)
         self.assertTrue(tracker.searching)
         self.assertEqual(rt.state, "PATROL")
-        state = self.step(tracker, patrol, rt, S, [animal([1300, 400, 1420, 500])], 6.0)
+        # (230 px above centre: 26/10 the vertical deadband became 0.20 of the half height)
+        state = self.step(tracker, patrol, rt, S, [animal([1300, 260, 1420, 360])], 6.0)
         self.assertEqual(state, "TRACKING")
         self.assertTrue(tracker.locked)
         self.assertFalse(tracker.searching)
@@ -1129,6 +1130,69 @@ class Field26OctTests(_Isolated):
         self.assertGreater(resp, 0.05)
         self.assertAlmostEqual(rt.manual.point[0] + sx, 495.5 + 330, delta=15,
                                msg="the approach aims beside the baboon (the live spot of an old box)")
+
+
+class ArcEndZoomTests(_Isolated):
+    """26/10 17:19-17:25: six zebras drinking LEFT of the water-hole, beyond the arc end (0.735,
+    the lodge pool behind it).  The camera held at pan 0.7291 - right - but its zoom pumped:
+    "group centre off-centre -> out", "group small and centred -> in", and it drifted from
+    47x out to 6x.  Boxes here follow the optical zoom about the picture's centre."""
+
+    HERD = [[40, 460, 110, 515], [193, 450, 275, 520], [390, 540, 480, 600], [550, 540, 650, 598],
+            [700, 537, 800, 600], [880, 455, 940, 510]]
+
+    def run_herd(self, herd, results=12, zoom=0.144, lock=2):
+        cam = SimCamera(pan=0.7291, tilt=-1.0, zoom=zoom)
+        tracker = PTZTracker(cam)
+        m0 = 1 + config.PTZ_ZOOM_MAG_PER_UNIT * zoom
+        zooms = []
+        for i in range(results):
+            k = (1 + config.PTZ_ZOOM_MAG_PER_UNIT * cam.zoom) / m0
+            dets = [animal([W / 2 + k * (b[0] - W / 2), H / 2 + k * (b[1] - H / 2),
+                            W / 2 + k * (b[2] - W / 2), H / 2 + k * (b[3] - H / 2)],
+                           tid=10 + j, conf=0.85 if j == lock else 0.7, species="plains zebra")
+                    for j, b in enumerate(herd)]
+            dets = [d for d in dets if d["box"][2] > 0 and d["box"][0] < W]
+            tracker.pose_hint = cam.get_pose()
+            tracker.update(dets, W, H, fresh=True, now=100.0 + 6.0 * i, capture_pose=cam.get_pose())
+            cam.advance(6.0)
+            zooms.append(round(cam.zoom, 4))
+        return cam, tracker, zooms
+
+    def test_25_resting_zebras_beyond_the_arc_end_are_not_zoomed_away_from(self):
+        cam, tracker, zooms = self.run_herd(self.HERD)
+        self.assertTrue(tracker.locked)
+        self.assertAlmostEqual(cam.pan, 0.7291, delta=0.004, msg="the camera left the arc end")
+        steps = [b - a for a, b in zip(zooms, zooms[1:]) if b != a]
+        self.assertFalse(any(s < 0 for s in steps), f"zoomed OUT of resting zebras: {zooms}")
+        self.assertGreater(zooms[-1], 0.144, f"never came closer: {zooms}")
+        k = (1 + config.PTZ_ZOOM_MAG_PER_UNIT * zooms[-1]) / (1 + config.PTZ_ZOOM_MAG_PER_UNIT * 0.144)
+        x1 = W / 2 + k * (self.HERD[2][0] - W / 2)
+        self.assertGreater(x1, 0.04 * W, "the followed zebra was zoomed out of the picture")
+
+    def test_25b_a_zebra_walking_out_at_the_arc_end_widens_the_view(self):
+        herd = [[30, 500, 120, 580]]                       # the followed animal at the picture's edge
+        cam, tracker, zooms = self.run_herd(herd, results=3, zoom=0.2, lock=0)
+        self.assertLess(zooms[-1], 0.2, f"the camera cannot turn, so it must widen: {zooms}")
+
+
+class SteadyFollowTests(_Isolated):
+    def test_26_grazing_zebras_bobbing_up_and_down_do_not_nod_the_camera(self):
+        """26/10 17:25-17:49: 166 tilt pulses in 24 min for vertical offsets of +-0.09 (heads
+        down to drink and up, the group's members changing) - the camera nodded up and down
+        and every move kept the AI waiting for a still picture."""
+        cam = SimCamera(pan=0.50, tilt=-1.0, zoom=0.15)
+        tracker = PTZTracker(cam)
+        tracker.observation_patrol = None
+        for i in range(10):
+            off = 50 if i % 2 else -50                       # +-0.09 of the half height
+            box = [W / 2 - 90, H / 2 + off - 70, W / 2 + 90, H / 2 + off + 70]
+            tracker.pose_hint = cam.get_pose()
+            tracker.update([animal(box, tid=5, species="plains zebra")], W, H, fresh=True, now=10.0 + 5 * i)
+            cam.advance(0.2)
+        tilts = [e for e in pulses(cam) if e[2] != 0.0]
+        self.assertEqual(tilts, [], "the camera nodded at a resting animal")
+        self.assertTrue(tracker.locked)
 
 
 class OperatorDetectionTests(_Isolated):

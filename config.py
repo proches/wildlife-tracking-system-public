@@ -148,6 +148,7 @@ TRACK_OTHERS_MEMORY = 45.0             # other animals seen this recently: a loc
 BOUNDARY_ZOOM_OUT_DX = 0.45            # (unused since 26/10: _boundary_zoom works from the picture edges)
 BOUNDARY_LEAVE_MARGIN = 0.04           # held at the arc end: the followed animal this close to the edge -> zoom out
 BOUNDARY_ZOOM_IN_MARGIN = 0.10         # ...zoom in only if, one step closer, it stays this far inside
+BOUNDARY_LEAD_RESULTS = 1.5            # ...judged also where it will be this many AI results ahead
 TRACK_FF_MIN_PX = 12                   # smaller expected drift: no pulse
 TRACK_FF_WINDOW = 12.0                 # seconds of positions used for the walking speed
 TRACK_FF_RESULT_SECONDS = 3.5          # ~AI interval (world speed -> "moves this far per result")              # fraction of the frame diagonal
@@ -261,6 +262,11 @@ TARGET_PRIORITY_SPECIES_WEIGHT = 0.10
 
 # --- PTZ behaviour ---
 FRAME_CENTER_DEADZONE = 0.06
+# 26/10 17:25-17:49, zebras at the water-hole: 166 tilt pulses in 24 min for vertical offsets of
+# +-0.09 (50 px) - up, down, up - and every move made the AI wait for a still picture (one
+# result in 46 s: the lock was lost and the patrol took over).  Height in the picture matters
+# far less than staying still: the vertical band is wider.
+FRAME_CENTER_DEADZONE_Y = 0.20
 PAN_TILT_GAIN = 0.70
 MAX_PAN_TILT_SPEED = 0.30   # tracking: slow level for small offsets, ~7 deg/s only for a target far off-centre
 ZOOM_GAIN = 0.45

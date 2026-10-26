@@ -20,8 +20,9 @@ def plan_pulse(ex, ey, frame_width, frame_height, deadzone=None, zoom=None, slow
     (TRACK_PAN_IMAGE_SIGN = -1) and UP when the tilt command is negative.
     """
     dz = config.FRAME_CENTER_DEADZONE if deadzone is None else deadzone
+    dz_y = config.FRAME_CENTER_DEADZONE_Y if deadzone is None else deadzone
     need_x = config.TRACK_MOVE_FRACTION * ex if abs(ex) > dz * frame_width / 2 else 0.0
-    need_y = config.TRACK_MOVE_FRACTION * ey if abs(ey) > dz * frame_height / 2 else 0.0
+    need_y = config.TRACK_MOVE_FRACTION * ey if abs(ey) > dz_y * frame_height / 2 else 0.0
     levels_x = ((config.TRACK_PAN_FAST, config.TRACK_PAN_FAST_PX_S), (config.TRACK_PAN_SLOW, config.TRACK_PAN_SLOW_PX_S))
     levels_y = ((config.TRACK_TILT_FAST, config.TRACK_TILT_FAST_PX_S), (config.TRACK_TILT_SLOW, config.TRACK_TILT_SLOW_PX_S))
 
@@ -694,10 +695,24 @@ class PTZTracker:
         followed animal itself is about to leave the picture; in only when, one step closer,
         it - and the whole group, if that still fits - stays well inside."""
         own = list(box) if coast or self.locked_box is None else list(self.locked_box)
-        if _near_edge(own, frame_width, frame_height, config.BOUNDARY_LEAVE_MARGIN):
+        # where it will be by the next result or so (the camera cannot turn, so the picture
+        # speed IS the animal's speed): a walking animal must not leave before we widen
+        vx, vy = self._velocity
+        if self.pose_hint is not None:
+            # the image speed builds up only slowly after the camera stopped turning with the
+            # animal; its world speed is known already (picture x = W/2 + (pan - animal_pan) * k)
+            wvx = (-self._trusted_world_vel() * self._px_per_pan_unit(self.pose_hint[2], frame_width)
+                   * config.TRACK_FF_RESULT_SECONDS)
+            if abs(wvx) > abs(vx):
+                vx = wvx
+        lead = config.BOUNDARY_LEAD_RESULTS
+        ahead = [own[0] + lead * vx, own[1] + lead * vy, own[2] + lead * vx, own[3] + lead * vy]
+        if (_near_edge(own, frame_width, frame_height, config.BOUNDARY_LEAVE_MARGIN)
+                or _near_edge(ahead, frame_width, frame_height, config.BOUNDARY_LEAVE_MARGIN)):
             return -config.ZOOM_MIN_TRACKING_SPEED if zoom_now > config.PATROL_SWEEP_ZOOM + 0.005 else 0.0
         if coast or zoom_now >= config.TRACK_MAX_ZOOM - 0.005:
             return 0.0
+        own = [min(own[0], ahead[0]), min(own[1], ahead[1]), max(own[2], ahead[2]), max(own[3], ahead[3])]
         k = config.TRACK_ZOOM_STEP
         margin = config.BOUNDARY_ZOOM_IN_MARGIN
         if self.group_count >= 2 and not _near_edge(_zoomed(box, k, frame_width, frame_height),
