@@ -168,6 +168,23 @@ CONFIRM_STRONG_BOX = 0.60               # any box this strong seen twice = an an
 CONFIRM_TWO_MODEL_MIN_BOX = 0.40        # MegaDetector box, seen twice...
 CONFIRM_TWO_MODEL_MIN_SPECIES = 0.45    # ...+ SpeciesNet names an animal this sure
 SITE_BIRD_VETO_EXEMPT = 0.45           # site-model "bird" this sure is not vetoed as "blank"
+# Birds IN FLIGHT (tracking/flight.py, main._birds_in_flight).  24-26/10: 4 of 8 bird
+# detections checked by eye were real birds, all flying past and seen by ONE AI result
+# (confirmation needs two); the other 4 were trees/stumps, two of them at night.
+FLIGHT_BIRDS_ENABLED = True
+FLIGHT_MIN_SCORE = 0.40                # the four real flying birds scored 0.42-0.86
+FLIGHT_MIN_RATIO = 3.0                 # box change vs the whole picture's change (aligned frames)
+FLIGHT_MIN_DIFF = 6.0                  # and at least this many grey levels on average
+FLIGHT_MIN_LOCAL = 2.0                 # ...and vs its surroundings (a tree in the wind changes all around)
+FLIGHT_STAY_SHIFT = 0.35               # a shift of up to 0.35 box sizes that undoes the change...
+FLIGHT_STAY_RESIDUAL = 0.5             # ...to half of it = a branch that swayed, not a bird that left
+FLIGHT_SCALE = 0.5                     # frame ring: half-size grey copies...
+FLIGHT_RING_FPS = 4.0                  # ...4 per second...
+FLIGHT_RING_SECONDS = 16.0             # ...for 16 s (AI results come 5-13 s after the frame): ~33 MB
+FLIGHT_NEIGHBOUR_MIN_S = 0.2           # frames this far before/after the analysed one are compared
+FLIGHT_NEIGHBOUR_MAX_S = 1.0
+NIGHT_DROP_BIRDS = True                # "birds" in night frames were stumps/bushes (2 of 2 checked,
+                                       # plus the recurring 22/10 night false positive)
 CUSTOM_YOLO_PERSON_NAMES = {"person", "human", "people"}
 CUSTOM_YOLO_VEHICLE_NAMES = {"vehicle", "car", "truck", "bus", "motorcycle"}
 

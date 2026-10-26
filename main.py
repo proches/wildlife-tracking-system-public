@@ -20,6 +20,7 @@ import platform
 import queue
 import threading
 import time
+from collections import deque
 from types import SimpleNamespace
 from urllib.parse import quote, urlsplit, urlunsplit
 
@@ -38,6 +39,7 @@ from utils.trace import NullTrace, PipelineTrace
 from tracking.box_flow import BoxFlowTracker
 from tracking.ptz_tracker import PTZTracker
 from utils.events import WildlifeEventEngine
+from tracking.flight import flight_score, is_bird, to_small
 from utils.health import write_health
 from utils.imageio import write_jpeg
 from utils.privacy import in_privacy_zone, privacy_filter
@@ -86,6 +88,9 @@ class FrameGrabber(threading.Thread):
         self._lock = threading.Lock()
         self._frame, self._t, self._seq = None, 0.0, 0
         self.ok = False
+        # small grey copies of the last seconds: is a bird box a bird in flight? (26/10)
+        self._ring = deque(maxlen=max(1, int(config.FLIGHT_RING_SECONDS * config.FLIGHT_RING_FPS)))
+        self._ring_t = 0.0
 
     def _open(self):
         cap = cv2.VideoCapture(self.uri)
@@ -115,13 +120,24 @@ class FrameGrabber(threading.Thread):
                 continue
             drops = 0
             self.ok = True
+            now = time.monotonic()
             with self._lock:
-                self._frame, self._t, self._seq = frame, time.monotonic(), self._seq + 1
+                self._frame, self._t, self._seq = frame, now, self._seq + 1
+            if config.FLIGHT_BIRDS_ENABLED and now - self._ring_t >= 1.0 / config.FLIGHT_RING_FPS:
+                small = to_small(frame)
+                with self._lock:
+                    self._ring.append((now, small))
+                self._ring_t = now
         cap.release()
 
     def latest(self):
         with self._lock:
             return self._frame, self._t, self._seq
+
+    def around(self, t, lo, hi):
+        """[(dt, small grey frame)] grabbed between lo and hi seconds before or after t."""
+        with self._lock:
+            return [(ft - t, img) for ft, img in self._ring if lo <= abs(ft - t) <= hi]
 
     def frame(self):
         return self.latest()[0]
@@ -177,8 +193,15 @@ class DetectionWorker(threading.Thread):
                 dets = self.pipeline.process_frame(
                     frame, scan_mode=job["scan_mode"], pose=job["pose"], roi=job["roi"],
                     deep=job["deep"], settled=True)
-                tracks = self.tracks.update(dets, w, h, pose=job["pose"])
                 metrics = dict(self.pipeline.last_metrics)
+                if config.NIGHT_DROP_BIRDS and (metrics.get("frame_quality") or {}).get("low_light"):
+                    # 24-26/10: every "bird" in a night frame was a stump or a bush (2 of 2 checked,
+                    # one of them "confirmed"), like the recurring 22/10 night false positive
+                    kept = [d for d in dets if not is_bird(d.get("species"))]
+                    if len(kept) != len(dets):
+                        metrics["night_birds_dropped"] = len(dets) - len(kept)
+                    dets = kept
+                tracks = self.tracks.update(dets, w, h, pose=job["pose"])
                 self.last_seconds = metrics.get("inference_seconds", 0.0)
                 self.last_stages = metrics.get("stages")
                 res = dict(job, tracks=tracks, metrics=metrics, done_at=time.monotonic())
@@ -503,6 +526,7 @@ class Runtime:
                     save_review(analysed, [d], "water", res["pose"], key=("w", d.get("track_id")))
                 else:      # every confirmed animal is a training example for the next round
                     save_review(analysed, [d], "animal", res["pose"], key=("a", d.get("track_id")))
+            self._birds_in_flight(res, grabber, S, events)
             weak = [d for d in S.tracks if not d.get("track_confirmed") and d.get("det_confidence", 0) >= 0.25]
             if weak:
                 save_review(analysed, weak, "candidate", res["pose"], key=("c", tuple(sorted(d["track_id"] for d in weak))))
@@ -858,6 +882,51 @@ class Runtime:
             S.still_motion_events = events
             if len(events) >= config.MOTION_CUE_INVESTIGATE_EVENTS:     # it keeps moving: worth a look
                 S.still_motion = (t0, cue)
+
+    def _birds_in_flight(self, res, grabber, S, events):
+        """A bird box seen once is a bird FLYING past when the picture 0.2-1 s before or after
+        shows it moved away (tracking/flight.py).
+
+        24-26/10: 4 of 8 bird detections checked by eye were real birds, all flying past and
+        each seen by one AI result - confirmation needs two, so all four were dropped.  Such a
+        bird is now logged ("BIRD IN FLIGHT"), saved (logs/review/*_bird_flight.jpg), written to
+        detections.csv and events.csv - not followed: it is gone long before the AI result
+        (5-13 s after the frame) and no PTZ catches a flying bird."""
+        if not config.FLIGHT_BIRDS_ENABLED or (res["metrics"].get("frame_quality") or {}).get("low_light"):
+            return
+        around = getattr(grabber, "around", None)
+        cands = [d for d in S.tracks if not d.get("track_confirmed") and is_bird(d.get("species"))
+                 and float(d.get("det_confidence") or 0.0) >= config.FLIGHT_MIN_SCORE]
+        if not cands or around is None or res.get("captured") is None:
+            return
+        neighbours = around(res["captured"], config.FLIGHT_NEIGHBOUR_MIN_S, config.FLIGHT_NEIGHBOUR_MAX_S)
+        if not neighbours:
+            return
+        seen = S.__dict__.setdefault("flight_seen", [])
+        small = to_small(res["frame"])
+        for d in cands:
+            if d.get("track_id") in seen:
+                continue
+            score, dt = flight_score(d["box"], small, neighbours)
+            self.trace.log("flight", {"track": d.get("track_id"), "species": d.get("species"),
+                                      "conf": round(float(d.get("det_confidence") or 0.0), 3),
+                                      "box": [round(float(v)) for v in d["box"]], "score": round(score, 2),
+                                      "dt": None if dt is None else round(dt, 2), "pairs": len(neighbours)},
+                           force=True)
+            if score < config.FLIGHT_MIN_RATIO:
+                continue
+            seen.append(d.get("track_id"))
+            del seen[:-200]
+            bird = dict(d, track_confirmed=True, flight=True)
+            log_detection(bird, pose=res["pose"])
+            save_review(res["frame"], [bird], "bird_flight", res["pose"], key=("f", d.get("track_id")))
+            if events:
+                with self.events_lock:
+                    events.record_flight(bird)
+            logger.info("BIRD IN FLIGHT: %s (box %.2f, %.0f px) at pan %.4f - moved away within %.1f s "
+                        "(score %.1f); logged and saved, not followed", species_label(d),
+                        float(d.get("det_confidence") or 0.0), d["box"][2] - d["box"][0], res["pose"][0],
+                        abs(dt), score)
 
     def _maybe_investigate(self, camera, tracker, patrol, focus, frame, pose, t0, S, res=None):
         """Zoom in by itself on something the AI keeps half-seeing.

@@ -118,6 +118,11 @@ class WildlifeEventEngine:
         self._write_events(events)
         return events
 
+    def record_flight(self, track):
+        """A bird seen flying past (main._birds_in_flight): one event row, no clip - the clip
+        buffer holds 3 s and the AI result arrives 5-13 s after the frame, the bird is gone."""
+        self._write_events([self._emit("BIRD_IN_FLIGHT", track, track.get("track_id"))])
+
     def push_frame(self, frame):
         self.recorder.push(frame)
 
