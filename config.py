@@ -145,7 +145,9 @@ TRACK_FF_PERIOD = 1.0                  # seconds between feedforward pulses
 TRACK_FF_MIN_SIGHTINGS = 3             # feedforward / predictions only after the SAME animal was seen this often
 TRACK_FF_MAX_LEAD = 0.5                # ...and never more than this share of the picture past its last sighting
 TRACK_OTHERS_MEMORY = 45.0             # other animals seen this recently: a lock "hop" onto one of them is not motion
-BOUNDARY_ZOOM_OUT_DX = 0.45            # held at the arc end, animal this far off-centre: widen the view
+BOUNDARY_ZOOM_OUT_DX = 0.45            # (unused since 26/10: _boundary_zoom works from the picture edges)
+BOUNDARY_LEAVE_MARGIN = 0.04           # held at the arc end: the followed animal this close to the edge -> zoom out
+BOUNDARY_ZOOM_IN_MARGIN = 0.10         # ...zoom in only if, one step closer, it stays this far inside
 TRACK_FF_MIN_PX = 12                   # smaller expected drift: no pulse
 TRACK_FF_WINDOW = 12.0                 # seconds of positions used for the walking speed
 TRACK_FF_RESULT_SECONDS = 3.5          # ~AI interval (world speed -> "moves this far per result")              # fraction of the frame diagonal
@@ -434,6 +436,11 @@ STATIC_FP_MOVE_TOLERANCE = 0.035   # fraction of frame diagonal
 STATIC_FP_POSE_TOLERANCE = (0.012, 0.04, 0.015)   # pan, tilt, zoom
 STATIC_FP_FILE = "logs/static_false_positives.json"
 STATIC_FP_ANIMAL_LABEL_MIN = 0.35      # a classifier animal label this sure -> never learned as clutter
+# 26/10 17:19: zebras drinking at the water-hole were thrown away as "static clutter" - two
+# spots learned there (today 13:59 and 23/10) were trusted for ever and checked BEFORE the
+# classifier, so an animal standing on one never got a chance to be recognised.
+STATIC_FP_FORGET_HOURS = 6.0           # a learned spot is trusted this long, then evaluated afresh
+STATIC_FP_RECHECK_CONFIDENCE = 0.60    # a box this sure on a learned spot still goes to the classifier
 STATIC_FP_SITE_MODEL_MIN = 0.45        # (unused since 19/10: site model alone is not animal evidence)
 TOP_EDGE_PX = 4                        # prefilter "top_foliage": a box touching the top edge...
 TOP_FOLIAGE_MIN_HEIGHT = 0.20          # ...at least this tall (fraction of the frame)...

@@ -49,9 +49,35 @@ def _mean(img, x1, y1, x2, y2):
     return float(img[y1:y2, x1:x2].mean())
 
 
-def flight_score(box, analysed_small, neighbours, scale=None):
+def align(analysed_small, neighbours):
+    """Take the camera's own motion out of each neighbour: [(dt, small grey frame)] ->
+    [(dt, aligned frame, |difference|, picture noise)], leaving out pairs phase correlation
+    cannot place (a zoom step, a big turn).  Done once per AI result, for every bird box."""
+    a = analysed_small.astype(np.float32)
+    h, w = a.shape[:2]
+    window = cv2.createHanningWindow((w, h), cv2.CV_32F)
+    out = []
+    for dt, nb in neighbours:
+        if nb.shape != a.shape:
+            continue
+        b = nb.astype(np.float32)
+        # copies: with a window OpenCV 5 multiplies both inputs by it in place
+        (dx, dy), resp = cv2.phaseCorrelate(a.copy(), b.copy(), window)
+        if resp < 0.02:
+            continue
+        aligned = cv2.warpAffine(b, np.float32([[1, 0, -dx], [0, 1, -dy]]), (w, h),
+                                 flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        diff = cv2.absdiff(a, aligned)
+        mx, my = int(abs(dx)) + 4, int(abs(dy)) + 4
+        core = diff[my:h - my, mx:w - mx]
+        if core.size:
+            out.append((dt, aligned, diff, float(np.median(core)) + 1.0))
+    return out
+
+
+def box_flight(box, analysed_small, aligned, scale=None):
     """box: full-resolution box in the ANALYSED frame; analysed_small: to_small(analysed frame);
-    neighbours: [(dt, small grey frame)] taken dt seconds from it.
+    aligned: align(analysed_small, neighbours).
     -> (score, dt): score = how many times more the box changed than the picture did, for the
     best neighbour in which the box content left; (0.0, None) when no neighbour shows flight."""
     s = config.FLIGHT_SCALE if scale is None else scale
@@ -70,25 +96,10 @@ def flight_score(box, analysed_small, neighbours, scale=None):
     reach = max(2, int(round(config.FLIGHT_STAY_SHIFT * size)))
     sx1, sy1, sx2, sy2 = max(0, bx1 - reach), max(0, by1 - reach), min(w, bx2 + reach), min(h, by2 + reach)
     patch = a[by1:by2, bx1:bx2]
-    window = cv2.createHanningWindow((w, h), cv2.CV_32F)
     best = (0.0, None)
-    for dt, nb in neighbours:
-        if nb.shape != a.shape:
-            continue
-        b = nb.astype(np.float32)
-        # copies: with a window OpenCV 5 multiplies both inputs by it in place
-        (dx, dy), resp = cv2.phaseCorrelate(a.copy(), b.copy(), window)
-        if resp < 0.02:
-            continue                                   # zoom / big turn: no verdict from this pair
-        aligned = cv2.warpAffine(b, np.float32([[1, 0, -dx], [0, 1, -dy]]), (w, h),
-                                 flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
-        diff = cv2.absdiff(a, aligned)
-        mx, my = int(abs(dx)) + 4, int(abs(dy)) + 4
-        core = diff[my:h - my, mx:w - mx]
-        if core.size == 0:
-            continue
+    for dt, frame, diff, noise in aligned:
         box_level = _mean(diff, bx1, by1, bx2, by2)
-        ratio = box_level / (float(np.median(core)) + 1.0)
+        ratio = box_level / noise
         if box_level < config.FLIGHT_MIN_DIFF or ratio < config.FLIGHT_MIN_RATIO:
             continue
         if ring_area > 0:
@@ -96,9 +107,9 @@ def flight_score(box, analysed_small, neighbours, scale=None):
             if box_level < config.FLIGHT_MIN_LOCAL * (ring_level + 1.0):
                 continue                               # the whole area changed: wind, a shadow
         # undone by a small shift?  (a branch swaying a few pixels)
-        area = aligned[sy1:sy2, sx1:sx2]
+        area = frame[sy1:sy2, sx1:sx2]
         if area.shape[0] > patch.shape[0] and area.shape[1] > patch.shape[1]:
-            here = float(np.sqrt(np.mean((patch - aligned[by1:by2, bx1:bx2]) ** 2)))
+            here = float(np.sqrt(np.mean((patch - frame[by1:by2, bx1:bx2]) ** 2)))
             fit = cv2.matchTemplate(area, patch, cv2.TM_SQDIFF)
             closest = math.sqrt(max(0.0, float(fit.min())) / patch.size)
             if closest <= config.FLIGHT_STAY_RESIDUAL * here:
@@ -106,3 +117,8 @@ def flight_score(box, analysed_small, neighbours, scale=None):
         if ratio > best[0]:
             best = (ratio, dt)
     return best
+
+
+def flight_score(box, analysed_small, neighbours, scale=None):
+    """box_flight() for one box straight from the neighbour frames."""
+    return box_flight(box, analysed_small, align(analysed_small, neighbours), scale)

@@ -447,6 +447,14 @@ class WildlifePipeline:
 
         # ---- geometry pre-filter + known clutter (before the classifier) ----
         rejected = {}
+        dropped = []          # what was thrown away and why - pipeline_trace (26/10: a zebra the
+                              # operator saw was never reported, and the trace only had counts)
+
+        def drop(d, why, **extra):
+            if len(dropped) < 8:
+                dropped.append(dict(why=why, box=[round(float(v)) for v in d["box"]],
+                                    det=round(float(d.get("det_confidence", 0.0)), 3),
+                                    src=d.get("source"), **extra))
         animals = []
         for d in base:
             if d["class_id"] != CLASS_ANIMAL:
@@ -454,9 +462,11 @@ class WildlifePipeline:
             ok, why = prefilter(d, frame_w, frame_h)
             if not ok:
                 rejected[why] = rejected.get(why, 0) + 1
+                drop(d, why)
                 continue
             if self.static.is_known_static(d, pose, frame_w, frame_h):
                 rejected["static_clutter"] = rejected.get("static_clutter", 0) + 1
+                drop(d, "static_clutter")
                 continue
             animals.append(d)
         animals.sort(key=lambda d: d["det_confidence"], reverse=True)
@@ -516,11 +526,14 @@ class WildlifePipeline:
             if (getattr(config, "DROP_NON_WILDLIFE_SPECIES", True) and label_l in NON_ANIMAL_LABELS
                     and float(species_conf or 0.0) >= config.NON_ANIMAL_VETO_CONFIDENCE):
                 dropped_non_wildlife += 1
+                drop(entry, "non_wildlife", label=label_l, label_conf=round(float(species_conf or 0.0), 3),
+                     cached=cached is not None)
                 continue
 
             entry["in_water_zone"] = bool(self.water.enabled and self.water.in_zone(entry["box"], frame_w, frame_h, pose))
             if settled and roi is None and self.static.observe(entry, pose, frame_w, frame_h):
                 rejected["static_clutter"] = rejected.get("static_clutter", 0) + 1
+                drop(entry, "static_clutter", label=label_l)
                 continue
             results.append(entry)
         self.static.save()
@@ -537,6 +550,7 @@ class WildlifePipeline:
             "animal_detections": len(results),
             "rejected": rejected,
             "dropped_non_wildlife": dropped_non_wildlife,
+            "dropped": dropped,
             "deep": deep,
             "roi": roi is not None,
             "scan_mode": bool(scan_mode),

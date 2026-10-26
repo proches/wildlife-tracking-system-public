@@ -39,7 +39,7 @@ from utils.trace import NullTrace, PipelineTrace
 from tracking.box_flow import BoxFlowTracker
 from tracking.ptz_tracker import PTZTracker
 from utils.events import WildlifeEventEngine
-from tracking.flight import flight_score, is_bird, to_small
+from tracking.flight import align, box_flight, is_bird, to_small
 from utils.health import write_health
 from utils.imageio import write_jpeg
 from utils.privacy import in_privacy_zone, privacy_filter
@@ -827,6 +827,7 @@ class Runtime:
                "latency_s": round(float(res.get("done_at", 0.0) - res.get("captured", res.get("done_at", 0.0))), 2),
                "raw": m.get("base_detections"), "kept": m.get("animal_detections"),
                "rejected": m.get("rejected"), "dropped_non_wildlife": m.get("dropped_non_wildlife"),
+               "dropped": m.get("dropped") or None,
                "stages": m.get("stages"), "roi": bool(res.get("roi")), "dets": dets, "state": self.state,
                "selected": list(tracker.last_selection) if tracker.locked else None}
         # every result with something in it; empty ones at most every 10 s
@@ -903,15 +904,17 @@ class Runtime:
         if not neighbours:
             return
         seen = S.__dict__.setdefault("flight_seen", [])
+        cands = [d for d in cands if d.get("track_id") not in seen]
+        if not cands:
+            return
         small = to_small(res["frame"])
+        aligned = align(small, neighbours)
         for d in cands:
-            if d.get("track_id") in seen:
-                continue
-            score, dt = flight_score(d["box"], small, neighbours)
+            score, dt = box_flight(d["box"], small, aligned)
             self.trace.log("flight", {"track": d.get("track_id"), "species": d.get("species"),
                                       "conf": round(float(d.get("det_confidence") or 0.0), 3),
                                       "box": [round(float(v)) for v in d["box"]], "score": round(score, 2),
-                                      "dt": None if dt is None else round(dt, 2), "pairs": len(neighbours)},
+                                      "dt": None if dt is None else round(dt, 2), "pairs": len(aligned)},
                            force=True)
             if score < config.FLIGHT_MIN_RATIO:
                 continue

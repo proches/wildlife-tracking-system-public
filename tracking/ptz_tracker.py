@@ -58,6 +58,17 @@ def plan_pulse(ex, ey, frame_width, frame_height, deadzone=None, zoom=None, slow
             -level_for(need_y, levels_y, lat_y), pulse)
 
 
+def _zoomed(box, k, frame_width, frame_height):
+    """Where a box lands after the optical zoom magnifies k times about the picture's centre."""
+    cx, cy = frame_width / 2.0, frame_height / 2.0
+    return [cx + k * (box[0] - cx), cy + k * (box[1] - cy), cx + k * (box[2] - cx), cy + k * (box[3] - cy)]
+
+
+def _near_edge(box, frame_width, frame_height, margin):
+    return (box[0] < margin * frame_width or box[2] > (1 - margin) * frame_width
+            or box[1] < margin * frame_height or box[3] > (1 - margin) * frame_height)
+
+
 class PTZTracker:
     def __init__(self, camera):
         self.camera = camera
@@ -401,13 +412,13 @@ class PTZTracker:
                 tilt = 0.0
         wanted_pan = pan
         pan = self.camera.guard_pan_speed(pan) if pan else 0.0
-        ex_n = (cx - frame_width / 2.0) / (frame_width / 2.0)
-        if (wanted_pan != 0.0 and pan == 0.0 and abs(ex_n) > config.BOUNDARY_ZOOM_OUT_DX
+        if (wanted_pan != 0.0 and pan == 0.0 and _near_edge(box, frame_width, frame_height, config.BOUNDARY_LEAVE_MARGIN)
                 and now - getattr(self, "_edge_zoom_t", -1e9) >= 2.5 and self.pose_hint is not None
                 and self.pose_hint[2] > config.PATROL_SWEEP_ZOOM + 0.005):
-            # at the end of the arc and the animal walks toward the picture's edge: the camera
+            # at the end of the arc and the animal reaches the picture's edge: the camera
             # cannot turn after it - widen the view between AI results (22/10 sim: it walked out
-            # of an 18x picture while the camera held at the arc limit)
+            # of an 18x picture while the camera held at the arc limit).  26/10: not just
+            # because the GROUP's centre is off-centre - that zoomed out to 6x on resting zebras
             self._edge_zoom_t = now
             self._zoom_step(-1)
         if pan == 0.0 and tilt == 0.0:
@@ -659,9 +670,7 @@ class PTZTracker:
                 logger.info("Animal at the end of the allowed arc: holding there and watching it")
             self.last_boundary_event = True
             allowed_pan = 0.0
-            if abs(dx) > config.BOUNDARY_ZOOM_OUT_DX and zoom_now > config.PATROL_SWEEP_ZOOM + 0.005:
-                # the camera cannot turn further: widen the view so it stays in the picture
-                target_zoom = -config.ZOOM_MIN_TRACKING_SPEED
+            target_zoom = self._boundary_zoom(box, frame_width, frame_height, zoom_now, coast)
         else:
             self._boundary_block_count = 0
         self._pan_speed, self._tilt_speed, self._zoom_speed = allowed_pan, target_tilt, target_zoom
@@ -674,6 +683,31 @@ class PTZTracker:
             self._command("ai", allowed_pan, target_tilt, 0.0, pulse, box, frame_width, frame_height)
         if target_zoom != 0.0:
             self._zoom_step(1 if target_zoom > 0 else -1)
+
+    def _boundary_zoom(self, box, frame_width, frame_height, zoom_now, coast):
+        """Zoom while the camera is held at the end of the arc and cannot turn to the animals.
+
+        The optical zoom works about the picture's centre, so here it alone decides what
+        stays in view.  26/10 17:19-17:25: zebras drinking left of the water-hole (beyond the
+        arc end): "group centre off-centre -> zoom out" and "group small and centred -> zoom
+        in" took turns, and the camera drifted from 47x out to 6x.  Now: out only when the
+        followed animal itself is about to leave the picture; in only when, one step closer,
+        it - and the whole group, if that still fits - stays well inside."""
+        own = list(box) if coast or self.locked_box is None else list(self.locked_box)
+        if _near_edge(own, frame_width, frame_height, config.BOUNDARY_LEAVE_MARGIN):
+            return -config.ZOOM_MIN_TRACKING_SPEED if zoom_now > config.PATROL_SWEEP_ZOOM + 0.005 else 0.0
+        if coast or zoom_now >= config.TRACK_MAX_ZOOM - 0.005:
+            return 0.0
+        k = config.TRACK_ZOOM_STEP
+        margin = config.BOUNDARY_ZOOM_IN_MARGIN
+        if self.group_count >= 2 and not _near_edge(_zoomed(box, k, frame_width, frame_height),
+                                                    frame_width, frame_height, margin):
+            fill = max((box[2] - box[0]) / frame_width, (box[3] - box[1]) / frame_height)
+            return config.ZOOM_MIN_TRACKING_SPEED if fill * k <= config.TRACK_GROUP_FILL_TARGET else 0.0
+        if _near_edge(_zoomed(own, k, frame_width, frame_height), frame_width, frame_height, margin):
+            return 0.0
+        size = max(own[2] - own[0], own[3] - own[1])
+        return config.ZOOM_MIN_TRACKING_SPEED if size * k <= config.TRACK_TARGET_PX * 1.3 else 0.0
 
     def _zoom_step(self, direction):
         """Tracking zoom as ONE bounded AbsoluteMove: magnification x / TRACK_ZOOM_STEP, never past

@@ -94,6 +94,44 @@ class StaticMemoryTests(unittest.TestCase):
         self.mem.observe(zebra, self.pose, W, H)
         self.assertFalse(self.mem.is_known_static(self.stump, self.pose, W, H))
 
+    def learn_stump(self):
+        for _ in range(8):
+            self.mem.observe(self.stump, self.pose, W, H)
+            self.t[0] += 8
+        self.assertTrue(self.mem.is_known_static(self.stump, self.pose, W, H))
+
+    def test_a_confident_box_on_a_learned_spot_reaches_the_classifier(self):
+        """26/10 17:19: zebras at the water-hole were dropped as "static clutter" BEFORE the
+        classifier could call them zebras (spots learned there at 13:59 and on 23/10)."""
+        self.learn_stump()
+        zebra_box = det([405, 498, 472, 561], conf=0.82, species=None)
+        self.assertFalse(self.mem.is_known_static(zebra_box, self.pose, W, H))
+        # ...and the classifier's verdict decides: still no animal -> clutter after all
+        self.assertTrue(self.mem.observe(det([405, 498, 472, 561], conf=0.82, species="unidentified", sconf=0.2),
+                                         self.pose, W, H))
+
+    def test_an_animal_label_on_a_learned_spot_forgets_the_spot(self):
+        self.learn_stump()
+        resting = det([400, 500, 470, 560], conf=0.3, species="plains zebra", sconf=0.5)    # not "verified"
+        self.assertFalse(self.mem.observe(resting, self.pose, W, H))
+        self.assertFalse(self.mem.is_known_static(self.stump, self.pose, W, H))
+
+    def test_a_learned_spot_is_evaluated_again_after_some_hours(self):
+        """The bottom of the water-hole view held a spot learned on 19/10, trusted for 7 days."""
+        self.learn_stump()
+        self.t[0] += config.STATIC_FP_FORGET_HOURS * 3600 - 60
+        self.assertTrue(self.mem.is_known_static(self.stump, self.pose, W, H))
+        self.t[0] += 120
+        self.assertFalse(self.mem.is_known_static(self.stump, self.pose, W, H), "an old spot is trusted for ever")
+        self.mem.save(force=True)
+        self.assertFalse(StaticFalsePositiveMemory(self.path, clock=lambda: self.t[0]).is_known_static(
+            self.stump, self.pose, W, H))
+        # a real stump is simply learned again
+        for _ in range(8):
+            self.mem.observe(self.stump, self.pose, W, H)
+            self.t[0] += 8
+        self.assertTrue(self.mem.is_known_static(self.stump, self.pose, W, H))
+
 
 class TrackConfirmationTests(unittest.TestCase):
     def feed(self, tracker, n, **kw):

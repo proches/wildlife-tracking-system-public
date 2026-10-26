@@ -160,11 +160,24 @@ class StaticFalsePositiveMemory:
         return best
 
     def is_known_static(self, det, pose, frame_w, frame_h):
+        """True = drop it before the classifier.  A spot learned more than
+        STATIC_FP_FORGET_HOURS ago is evaluated afresh, and a confident box on a spot goes
+        to the classifier anyway (observe() then drops it if it still is no animal)."""
         if not config.STATIC_FP_ENABLED or pose is None:
             return False
         nbox = [det["box"][0] / frame_w, det["box"][1] / frame_h, det["box"][2] / frame_w, det["box"][3] / frame_h]
         e = self._find(pose, nbox)
-        return bool(e and e.get("static"))
+        if not (e and e.get("static")):
+            return False
+        now = self.clock()
+        if now - float(e.get("learned", e.get("last", now))) > config.STATIC_FP_FORGET_HOURS * 3600.0:
+            logger.info("Static clutter spot at pan=%.3f zoom=%.3f box=%s is old: evaluating it again",
+                        e["pose"][0], e["pose"][2], [round(v, 3) for v in e["box"]])
+            e.update(static=False, hits=0, first=now, last=now)
+            e.pop("learned", None)
+            self._dirty = True
+            return False
+        return float(det.get("det_confidence", 0.0)) < config.STATIC_FP_RECHECK_CONFIDENCE
 
     def observe(self, det, pose, frame_w, frame_h):
         """Record one *settled-camera* detection.  Returns True if it is static clutter."""
@@ -182,7 +195,14 @@ class StaticFalsePositiveMemory:
         if _animal_evidence(det):
             # 19/10: resting baboons ("sciuridae family 0.60") were learned as
             # clutter after 25 s of sitting still.  Anything a classifier calls an
-            # animal, or the site model is fairly sure of, is never clutter.
+            # animal, or the site model is fairly sure of, is never clutter - and a
+            # spot an animal stands on is no clutter spot.
+            e = self._find(pose, nbox)
+            if e is not None and e.get("static"):
+                self.entries.remove(e)
+                self._dirty = True
+                logger.info("Static clutter spot at pan=%.3f zoom=%.3f forgotten: an animal (%s) stands there",
+                            pose[0], pose[2], det.get("species"))
             return False
         e = self._find(pose, nbox)
         if e is None:
@@ -204,7 +224,7 @@ class StaticFalsePositiveMemory:
         e["hits"] += 1
         e["last"] = now
         if e["hits"] >= config.STATIC_FP_MIN_HITS and now - e["first"] >= config.STATIC_FP_MIN_SECONDS:
-            e["static"] = True
+            e["static"], e["learned"] = True, now
             self._dirty = True
             logger.info("Learned static clutter at pan=%.3f zoom=%.3f box=%s (never moved, never identified)",
                         pose[0], pose[2], [round(v, 3) for v in nbox])
