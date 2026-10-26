@@ -1,5 +1,8 @@
 # Third-party components
 
+The project itself is proprietary (see LICENSE). The components below are
+not owned by the project and keep their own licences.
+
 | Component | Where | Licence |
 |---|---|---|
 | MegaDetector V6 (Microsoft AI for Good, via PytorchWildlife) | `models/MDV6-yolov9-c.pt` | MIT |

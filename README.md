@@ -1,5 +1,7 @@
 # Melia Serengeti Wildlife AI — v3.1
 
+> **Hakimiliki:** haki zote zimehifadhiwa - si open source; hairuhusiwi kutumika bila ruhusa ya maandishi ya mwenye hakimiliki. Tazama [LICENSE](LICENSE).
+>
 > **Nakala ya public** (code na models, bila picha za kamera wala logs): https://github.com/proches/wildlife-tracking-system-public - inasasishwa yenyewe na `tools/publish_public.py`.
 >
 > **Kurudisha mfumo kwenye PC mpya:** soma [RESTORE.md](RESTORE.md) (setup.bat, `.env`, data za Releases, tasks za Windows).
