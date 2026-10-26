@@ -95,6 +95,7 @@ class PTZTracker:
         self.manual_active = False   # an operator click-to-zoom owns the camera (main / ManualLook)
         self._inconclusive = 0       # site-model-only results in a row while locked
         self.group_count = 0         # animals framed together with the target
+        self.hold_seconds = config.LOST_HOLD_SECONDS   # how long the last lost target's view is held
         self.visual_follow = False   # main's frame-to-frame box tracker is following the target
         self.last_selection = (None, "")   # (track id, why) - for the pipeline trace
         self.last_ptz = None         # last tracking PTZ command (for the pipeline trace)
@@ -131,6 +132,7 @@ class PTZTracker:
         still (when locked, waiting for the next result).
         """
         now = time.monotonic() if now is None else now
+        self._now = now
         self.view_changed = False
         self.last_boundary_event = False
         self._capture = (capture_pose, capture_time if capture_time is not None else now) if fresh else None
@@ -178,13 +180,17 @@ class PTZTracker:
         if self.locked_box is not None:
             if self._lock_alive(now):
                 return  # keep the shot, wait for the next AI result
+            # 26/10 18:29: a herd of zebras walked behind a near tree; after 60 s the patrol
+            # took the camera away while they were still there.  A herd gets longer.
+            self.hold_seconds = (config.LOST_HOLD_SECONDS_GROUP if self.group_count >= config.LOST_HOLD_GROUP_MIN
+                                 else config.LOST_HOLD_SECONDS)
             logger.info("Target lost for %.0fs (%d AI results without it); holding this view %.0f s before patrol",
-                        now - self._last_seen, self.missed_frames, config.LOST_HOLD_SECONDS)
+                        now - self._last_seen, self.missed_frames, self.hold_seconds)
             self._release_lock()
             self.camera.stop()
             # 19/10: animals went behind a bush for a moment and the patrol carried the
             # camera away.  Stay and keep looking; the same animal re-locks if it shows up.
-            self._hold_until = now + config.LOST_HOLD_SECONDS
+            self._hold_until = now + self.hold_seconds
             return
         if now < self._hold_until:
             return
@@ -729,6 +735,13 @@ class PTZTracker:
         TRACK_MAX_ZOOM.  21/10 13:52: the 0.4-s continuous zoom pulse coasted from 26x to 42x
         (the lens keeps going after Stop) - one animal filled the picture, the group was cut off,
         and no rule ever came back below the limit (above it, this step goes straight back)."""
+        now = getattr(self, "_now", None)
+        now = time.monotonic() if now is None else now
+        if direction > 0 and now - getattr(self, "_zoom_out_t", -1e9) < config.TRACK_ZOOM_IN_AFTER_OUT_SECONDS:
+            # 26/10 18:15: out, in 10 s later, out again - the zebras grazed at the picture's
+            # edge.  Widening stays allowed at once (it keeps the animal in view); coming
+            # closer again waits, so the picture does not pump.
+            return False
         pose = self.pose_hint if self.pose_hint is not None else self.camera.get_pose()
         if pose is None:
             return False                  # unknown zoom: no blind step
@@ -742,6 +755,8 @@ class PTZTracker:
         target = (target_m - 1.0) / per
         if abs(target - z) < 0.003:
             return False
+        if direction < 0:
+            self._zoom_out_t = now
         rec = {"source": "zoom", "cmd": [0.0, 0.0, float(direction), round(target, 3)],
                "pose": [round(float(v), 4) for v in pose]}
         try:

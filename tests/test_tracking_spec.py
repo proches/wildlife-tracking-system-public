@@ -1194,6 +1194,41 @@ class SteadyFollowTests(_Isolated):
         self.assertEqual(tilts, [], "the camera nodded at a resting animal")
         self.assertTrue(tracker.locked)
 
+    def test_26c_a_herd_lost_behind_trees_is_waited_for_longer(self):
+        """26/10 18:29: zebras walked behind a near tree; 60 s later the patrol took the
+        camera away while the herd was still there."""
+        for herd, hold in ((3, config.LOST_HOLD_SECONDS_GROUP), (1, config.LOST_HOLD_SECONDS)):
+            cam = SimCamera(pan=0.50, tilt=-1.0, zoom=0.15)
+            tracker = PTZTracker(cam)
+            tracker.observation_patrol = None
+            dets = [animal([700 + 160 * j, 480, 820 + 160 * j, 600], tid=5 + j, species="plains zebra")
+                    for j in range(herd)]
+            tracker.pose_hint = cam.get_pose()
+            tracker.update(dets, W, H, fresh=True, now=10.0)
+            self.assertTrue(tracker.locked)
+            t = 10.0
+            while tracker.locked and t < 200:
+                t += 5.0
+                tracker.update([], W, H, fresh=True, now=t)
+            self.assertFalse(tracker.locked)
+            self.assertAlmostEqual(tracker._hold_until - t, hold, delta=0.1, msg=f"herd of {herd}")
+
+    def test_26b_no_zooming_back_in_right_after_a_zoom_out(self):
+        """26/10 18:15 (new code, first minutes): out, in 10 s later, out, in... (zebras grazing
+        at the picture's edge).  Widening is allowed at once, coming closer again waits."""
+        cam = SimCamera(pan=0.50, tilt=-1.0, zoom=0.20)
+        tracker = PTZTracker(cam)
+        tracker.pose_hint = cam.get_pose()
+        tracker._now = 100.0
+        self.assertTrue(tracker._zoom_step(-1))
+        tracker.pose_hint = cam.get_pose()
+        tracker._now = 110.0
+        self.assertFalse(tracker._zoom_step(+1), "zoomed back in 10 s after zooming out")
+        self.assertTrue(tracker._zoom_step(-1), "widening must never wait")
+        tracker.pose_hint = cam.get_pose()
+        tracker._now = 110.0 + config.TRACK_ZOOM_IN_AFTER_OUT_SECONDS + 1
+        self.assertTrue(tracker._zoom_step(+1))
+
 
 class OperatorDetectionTests(_Isolated):
     """main.Runtime._watch_operator: a person steering the camera vs our own moves."""

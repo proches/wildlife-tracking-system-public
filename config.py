@@ -140,6 +140,7 @@ TRACK_GROUP_FILL_MIN = 0.40            # a framed group smaller than this share 
 TRACK_GROUP_FILL_MAX = 0.80            # larger: zoom out (members would leave the picture)
 TRACK_GROUP_FILL_TARGET = 0.60         # one-step approach to a far group: aim for this share
 TRACK_ZOOM_STEP = 1.3                  # tracking zoom: one AbsoluteMove of x1.3 magnification per AI result
+TRACK_ZOOM_IN_AFTER_OUT_SECONDS = 30.0 # no zooming in again this soon after a zoom out (26/10: pumping)
 TRACK_FEEDFORWARD = True               # keep turning with a walking animal between AI results
 TRACK_FF_PERIOD = 1.0                  # seconds between feedforward pulses
 TRACK_FF_MIN_SIGHTINGS = 3             # feedforward / predictions only after the SAME animal was seen this often
@@ -676,6 +677,8 @@ LOST_TARGET_SECONDS = 10.0
 LOST_TARGET_MIN_RESULTS = 3            # ...and only after this many AI results without the animal
 LOST_TARGET_MAX_SECONDS = 40.0         # hard cap if the AI stalls
 LOST_HOLD_SECONDS = 60.0               # after losing a target the camera stays on that view this long
+LOST_HOLD_SECONDS_GROUP = 180.0        # ...a herd (behind trees, still there) this long
+LOST_HOLD_GROUP_MIN = 3                # animals framed together that count as a herd
 
 # --- Water zone -------------------------------------------------------------
 WATER_ROI_FILE = "water_roi.json"

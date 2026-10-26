@@ -798,7 +798,7 @@ class Runtime:
         if new == "TARGET_LOST":
             return f"{tracker.missed_frames} AI result(s) without the target; visual tracker {'on' if tracker.visual_follow else 'off'}"
         if new == "RECOVERY":
-            return f"target lost - holding the view for {config.LOST_HOLD_SECONDS:.0f} s before patrol"
+            return f"target lost - holding the view for {tracker.hold_seconds:.0f} s before patrol"
         if new == "ACQUIRING":
             m = self.manual
             kind = "approach" if m.approach else "auto-investigate" if m.auto else "operator click" if m.operator else "look"
