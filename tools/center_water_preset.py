@@ -58,7 +58,7 @@ def gray(frame):
 def shift_of(ref, frame):
     """Content shift of ``frame`` relative to ``ref`` in full-resolution pixels."""
     win = cv2.createHanningWindow(ref.shape[::-1], cv2.CV_32F)
-    (dx, dy), resp = cv2.phaseCorrelate(ref, gray(frame), win)
+    (dx, dy), resp = cv2.phaseCorrelate(ref.copy(), gray(frame), win)    # OpenCV 5 windows its inputs in place
     return dx * 2.0, dy * 2.0, resp
 
 

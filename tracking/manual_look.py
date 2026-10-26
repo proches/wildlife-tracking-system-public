@@ -78,7 +78,9 @@ class ManualLook:
         self.phase, self.since = phase, self.clock()
 
     def _shift(self, frame):
-        (dx, dy), resp = cv2.phaseCorrelate(self.ref, _small_gray(frame), self.win)
+        # a copy: with a window OpenCV 5 multiplies BOTH inputs by it in place - the kept
+        # reference faded with every call (26/10: response 0.96 -> 0.59 after 7 calls)
+        (dx, dy), resp = cv2.phaseCorrelate(self.ref.copy(), _small_gray(frame), self.win)
         return dx * 2.0, dy * 2.0, resp
 
     # ---------------------------------------------------------------- tick

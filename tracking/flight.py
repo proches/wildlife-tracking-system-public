@@ -76,7 +76,8 @@ def flight_score(box, analysed_small, neighbours, scale=None):
         if nb.shape != a.shape:
             continue
         b = nb.astype(np.float32)
-        (dx, dy), resp = cv2.phaseCorrelate(a, b, window)
+        # copies: with a window OpenCV 5 multiplies both inputs by it in place
+        (dx, dy), resp = cv2.phaseCorrelate(a.copy(), b.copy(), window)
         if resp < 0.02:
             continue                                   # zoom / big turn: no verdict from this pair
         aligned = cv2.warpAffine(b, np.float32([[1, 0, -dx], [0, 1, -dy]]), (w, h),

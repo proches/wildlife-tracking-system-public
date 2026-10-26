@@ -44,16 +44,20 @@ def view(scene, ox, oy=100, seed=0, noise=2.5):
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
-def draw_bird(img, cx, cy, size, wings_up=True):
-    """A dark bird with spread wings, about size px across."""
+def draw_bird(img, cx, cy, size, wings_up=True, colour=(35, 30, 28)):
+    """A dark bird with spread wings, `size` px across; returns its tight box.  It fills about
+    a third of the box, like the four flying birds of 24-26/10."""
     s = size / 2.0
-    pts = np.array([[cx - s, cy - (0.35 * s if wings_up else -0.2 * s)], [cx - 0.2 * s, cy],
-                    [cx, cy - 0.15 * s], [cx + 0.2 * s, cy],
-                    [cx + s, cy - (0.35 * s if wings_up else -0.2 * s)], [cx, cy + 0.25 * s]], np.int32)
-    cv2.fillPoly(img, [pts], (35, 30, 28))
-    cv2.ellipse(img, (int(cx), int(cy)), (max(2, int(0.18 * s)), max(2, int(0.12 * s))), 0, 0, 360,
-                (25, 22, 20), -1)
-    return [cx - s, cy - 0.4 * s, cx + s, cy + 0.3 * s]
+    tip = -0.30 * s if wings_up else 0.10 * s
+    for side in (-1, 1):
+        wing = np.array([[cx + side * 0.15 * s, cy - 0.12 * s], [cx + side * s, cy + tip],
+                         [cx + side * 0.95 * s, cy + tip + 0.22 * s], [cx + side * 0.15 * s, cy + 0.15 * s]],
+                        np.int32)
+        cv2.fillPoly(img, [wing], colour)
+    cv2.ellipse(img, (int(cx), int(cy)), (max(2, int(0.25 * s)), max(2, int(0.16 * s))), 0, 0, 360,
+                tuple(max(0, c - 10) for c in colour), -1)
+    top, bottom = min(cy - 0.16 * s, cy + tip), max(cy + 0.16 * s, cy + tip + 0.22 * s)
+    return [cx - s, top, cx + s, bottom]
 
 
 def small(frame):
@@ -111,6 +115,14 @@ class FlightScoreTests(unittest.TestCase):
         score, _ = flight_score(box, small(a), [(0.5, small(b))])
         self.assertGreaterEqual(score, config.FLIGHT_MIN_RATIO)
 
+    def test_a_brown_bird_against_the_bush(self):
+        """Low contrast: a brown bird (~40 grey levels darker than the grass), the patrol moving."""
+        a, b = view(self.scene, 200, seed=1), view(self.scene, 213, seed=2)
+        box = draw_bird(a, 1000, 600, 70, colour=(70, 82, 92))
+        draw_bird(b, 1000 - 13 + 75, 590, 70, wings_up=False, colour=(70, 82, 92))
+        score, _ = flight_score(box, small(a), [(0.5, small(b))])
+        self.assertGreaterEqual(score, config.FLIGHT_MIN_RATIO)
+
     def test_the_best_of_several_neighbours_counts(self):
         a, b, box = self.pair(200, 200, bird_a=(900, 400), bird_b=(1000, 400))
         still = view(self.scene, 200, seed=7)
@@ -118,6 +130,9 @@ class FlightScoreTests(unittest.TestCase):
         score, dt = flight_score(box, small(a), [(0.2, small(still)), (0.75, small(b))])
         self.assertGreaterEqual(score, config.FLIGHT_MIN_RATIO)
         self.assertEqual(dt, 0.75)
+        # 26/10: with a window OpenCV 5 multiplies phaseCorrelate's inputs in place - the first
+        # neighbour spoilt the picture for the second one (this case gave 0.0)
+        self.assertEqual((score, dt), flight_score(box, small(a), [(0.75, small(b)), (0.2, small(still))]))
 
     def test_a_tree_or_stump_called_bird_is_not_flying(self):
         """24-26/10: 4 of 8 "birds" were trees, branches and stumps - nothing moved."""
@@ -141,11 +156,38 @@ class FlightScoreTests(unittest.TestCase):
         score, _ = flight_score(box, small(a), [(0.5, small(b))])
         self.assertEqual(score, 0.0)
 
-    def test_a_zoom_step_gives_no_verdict(self):
-        """Between the two frames the camera zoomed: everything changed, the box no more than the rest."""
-        a, _, box = self.pair(200, 200, bird_a=(900, 400))
-        b = cv2.resize(a, None, fx=1.4, fy=1.4)[200:200 + H, 300:300 + W]
-        draw_bird(b, 900, 400, 84)
+    def test_a_tree_in_the_wind_is_not_flying(self):
+        """The leaves of a whole crown flickered between the frames, the "bird" box with them:
+        no small shift undoes that, but the crown around the box changed as much as the box."""
+        a, b, _ = self.pair(200, 200)
+        rng = np.random.default_rng(9)
+
+        def leaves():
+            g = cv2.GaussianBlur(rng.normal(0, 1, (260, 360)).astype(np.float32), (0, 0), 2)
+            return 90 + 40 * g / g.std()
+        crown = leaves()
+        a[300:560, 760:1120] = np.clip(crown, 0, 255).astype(np.uint8)[..., None]
+        b[300:560, 760:1120] = np.clip(0.5 * crown + 0.5 * leaves(), 0, 255).astype(np.uint8)[..., None]
+        score, _ = flight_score([900, 400, 980, 450], small(a), [(0.5, small(b))])
+        self.assertEqual(score, 0.0)
+
+    def test_a_stump_on_the_skyline_while_the_patrol_travels(self):
+        """Smooth sky, the camera turning 40 px between the frames: unless the camera's own
+        motion is taken out, the stump seems to have left its place."""
+        sky = self.scene.copy()
+        sky[:600] = np.clip(cv2.GaussianBlur(sky[:600], (0, 0), 25) * 0.3 + 150, 0, 255).astype(np.uint8)
+        cv2.ellipse(sky, (1100 + 200, 560 + 100), (24, 16), 0, 0, 360, (30, 28, 26), -1)
+        a, b = view(sky, 200, seed=1), view(sky, 240, seed=2)
+        score, _ = flight_score([1076, 544, 1124, 576], small(a), [(0.5, small(b))])
+        self.assertEqual(score, 0.0)
+
+    def test_a_zoom_step_is_not_flight(self):
+        """The camera zoomed between the frames (x1.12): the stump grew and moved, so did the rest."""
+        a, _, _ = self.pair(200, 200)
+        box = draw_bird(a, 900, 400, 60)
+        z, c = 1.12, np.float32([W / 2, H / 2])
+        m = np.float32([[z, 0, c[0] * (1 - z)], [0, z, c[1] * (1 - z)]])
+        b = cv2.warpAffine(a, m, (W, H), borderMode=cv2.BORDER_REPLICATE)
         score, _ = flight_score(box, small(a), [(0.5, small(b))])
         self.assertEqual(score, 0.0)
 
@@ -194,14 +236,14 @@ class NightBirdTests(unittest.TestCase):
         return res
 
     def test_night_birds_are_dropped(self):
-        dets = [{"box": [100, 100, 140, 130], "det_confidence": 0.6, "species": "bird", "class_id": 1},
+        dets = [{"box": [100, 100, 140, 130], "det_confidence": 0.6, "species": "bird", "class_id": 0},
                 {"box": [600, 400, 800, 600], "det_confidence": 0.7, "species": "african buffalo", "class_id": 0}]
         res = self.run_job(True, dets)
         self.assertEqual([d["species"] for d in res["tracks"]], ["african buffalo"])
         self.assertEqual(res["metrics"]["night_birds_dropped"], 1)
 
     def test_day_birds_are_kept(self):
-        dets = [{"box": [100, 100, 140, 130], "det_confidence": 0.6, "species": "bird", "class_id": 1}]
+        dets = [{"box": [100, 100, 140, 130], "det_confidence": 0.6, "species": "bird", "class_id": 0}]
         res = self.run_job(False, dets)
         self.assertEqual([d["species"] for d in res["tracks"]], ["bird"])
         self.assertNotIn("night_birds_dropped", res["metrics"])
@@ -236,9 +278,13 @@ class BirdsInFlightTickTests(unittest.TestCase):
             draw_bird(later, 1100, 300, 50)
         else:
             draw_bird(later, 1180, 280, 50, wings_up=False)
-        ring = [(10.0 + k * 0.25, small(view(self.scene, 200, seed=10 + k))) for k in range(-6, 0)]
+        ring = []
+        for k in range(-6, 0):                  # the 1.5 s before: flying in from the left, or sitting there
+            before = view(self.scene, 200, seed=10 + k)
+            draw_bird(before, 1100 + (40 * k if flying else 0), 300 - (5 * k if flying else 0), 50)
+            ring.append((10.0 + k * 0.25, small(before)))
         ring.append((10.5, small(later)))
-        bird = {"box": box, "class_id": 1, "det_confidence": conf, "species": species, "species_confidence": conf,
+        bird = {"box": box, "class_id": 0, "det_confidence": conf, "species": species, "species_confidence": conf,
                 "track_id": 7, "track_confirmed": confirmed, "priority_score": conf}
         res = dict(frame=analysed, pose=(0.45, -1.0, 0.03), epoch=-1, seq=seq, captured=10.0, done_at=16.0,
                    tracks=[bird], metrics={"conclusive": True, "inference_seconds": 6.0,

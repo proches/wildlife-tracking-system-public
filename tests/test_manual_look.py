@@ -70,6 +70,21 @@ class ManualLookTests(unittest.TestCase):
         self.assertAlmostEqual(mag, 3.85 * config.MANUAL_ZOOM_FACTOR, delta=0.3)
         self.assertTrue(look.detection_allowed)
 
+    def test_the_reference_picture_survives_the_measurements(self):
+        """26/10: with a window OpenCV 5 multiplies phaseCorrelate's inputs in place, so every
+        measurement faded the kept reference (on camera frames: response 0.96 -> 0.59 in 7)."""
+        rng = np.random.default_rng(2)
+        canvas = np.kron(rng.integers(0, 255, (130, 220, 3), dtype=np.uint8), np.ones((20, 20, 1), np.uint8))
+        cam = FakeCam(canvas)
+        look = ManualLook(cam, (1500, 800), cam.frame(), (0.5, -1.0, 0.03), clock=lambda: 0.0)
+        ref = look.ref.copy()
+        cam.ox -= 120
+        first = look._shift(cam.frame())
+        for _ in range(6):
+            look._shift(cam.frame())
+        np.testing.assert_array_equal(look.ref, ref)
+        self.assertAlmostEqual(look._shift(cam.frame())[2], first[2], places=6)
+
 
 if __name__ == "__main__":
     unittest.main()
