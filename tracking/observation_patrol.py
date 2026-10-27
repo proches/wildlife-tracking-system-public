@@ -538,7 +538,9 @@ class ObservationPatrol:
         except (TypeError, ValueError):
             return False
         low, high = config.ALLOWED_PAN_RANGE
-        if not (math.isfinite(pan) and low - config.PAN_ARC_RECOVERY_MAX <= pan <= high + config.PAN_ARC_RECOVERY_MAX):
+        # (27/10: zoomed in, the tracker may have followed an animal up to PAN_HIGH_ZOOMED_MAX)
+        reach_high = max(high + config.PAN_ARC_RECOVERY_MAX, config.PAN_HIGH_ZOOMED_MAX + config.PAN_RECOVERY_TOLERANCE)
+        if not (math.isfinite(pan) and low - config.PAN_ARC_RECOVERY_MAX <= pan <= reach_high):
             return False
         if now - getattr(self, "_last_recovery", -1e9) < 4.0:
             return True

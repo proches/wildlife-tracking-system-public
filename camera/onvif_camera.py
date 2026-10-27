@@ -28,6 +28,7 @@ import time
 from datetime import timedelta
 
 import config
+from utils.privacy import min_zoom_for_pan, pan_high_for_zoom
 
 
 logger = logging.getLogger("wildlife_tracker.camera")
@@ -291,19 +292,53 @@ class OnvifPTZCamera:
 
         self._run(_call())
 
+    @staticmethod
+    def pan_limits(zoom=None):
+        """(low, high, margin) of the wildlife arc at this zoom.  27/10: the high end reaches
+        past ALLOWED_PAN_RANGE while zoomed in (utils.privacy.pan_high_for_zoom - the lodge
+        deck stays out of the picture), and the edge margin shrinks with the zoom like the
+        camera's own pan rate does."""
+        low, high = config.ALLOWED_PAN_RANGE
+        margin = config.PAN_BOUNDARY_MARGIN
+        try:
+            z = float(zoom)
+        except (TypeError, ValueError):
+            return low, high, margin
+        if not math.isfinite(z):
+            return low, high, margin
+        wide = 1.0 + config.PTZ_ZOOM_MAG_PER_UNIT * config.PATROL_SWEEP_ZOOM
+        m = 1.0 + config.PTZ_ZOOM_MAG_PER_UNIT * max(0.0, z)
+        margin = max(config.PAN_BOUNDARY_MARGIN_MIN, margin * min(1.0, wide / m))
+        return low, pan_high_for_zoom(z), margin
+
+    def safe_zoom(self, zoom, pan=None):
+        """``zoom``, or the widest zoom that keeps the lodge deck out of the picture at this
+        pan (27/10: far left, past the old arc end, the camera must not widen)."""
+        if pan is None:
+            pan = getattr(self, "_last_good_pan", None)
+        if pan is None:
+            return zoom
+        floor = min_zoom_for_pan(pan)
+        if zoom < floor:
+            logger.info("Zoom %.3f refused at pan %.4f (the lodge deck would show): %.3f instead",
+                        zoom, pan, floor)
+            return floor
+        return zoom
+
     def guard_pan_speed(self, speed, status=None, margin=None, max_speed=None):
         """Allow only inward pan near an edge; fail closed on invalid status."""
         limits = config.ALLOWED_PAN_RANGE
         if limits is None or speed == 0.0:
             return speed
         try:
-            low, high = limits
-            margin = config.PAN_BOUNDARY_MARGIN if margin is None else float(margin)
+            status = status if status is not None else self.get_status()
+            zoom = getattr(getattr(status, "Zoom", None), "x", None)
+            low, high, auto_margin = self.pan_limits(zoom)
+            margin = auto_margin if margin is None else float(margin)
             if not (all(math.isfinite(v) for v in (low, high, margin, speed))
                     and -1.0 <= low < high <= 1.0
                     and 0 <= margin < (high - low) / 2):
                 raise ValueError("Invalid pan limits")
-            status = status if status is not None else self.get_status()
             pan = float(status.PanTilt.x)
             if not math.isfinite(pan):
                 raise ValueError("Non-finite pan position")
@@ -338,6 +373,8 @@ class OnvifPTZCamera:
                 return 0.0
             if speed < 0 and position <= config.ZOOM_POSITION_MIN + config.ZOOM_POSITION_MARGIN:
                 return 0.0
+            if speed < 0 and float(status.PanTilt.x) > config.ALLOWED_PAN_RANGE[1]:
+                return 0.0              # past the old arc end only zoomed in (27/10, lodge deck)
             return max(-config.MAX_ZOOM_SPEED, min(config.MAX_ZOOM_SPEED, speed))
         except (AttributeError, TypeError, ValueError):
             logger.warning("Zoom blocked: lens position unavailable")
@@ -429,13 +466,14 @@ class OnvifPTZCamera:
         """
         self.last_command_time = time.monotonic() + 3.5   # the camera keeps moving ~3 s (operator detection)
         low, high = config.ALLOWED_PAN_RANGE
-        pan = max(low, min(high, float(pan)))
-        tilt = max(-1.0, min(1.0, float(tilt)))
         if zoom is not None:
             zoom = max(
                 config.ZOOM_POSITION_MIN,
                 min(config.ZOOM_POSITION_MAX, float(zoom)),
             )
+            high = pan_high_for_zoom(zoom)      # zoomed in it may go a little further (27/10)
+        pan = max(low, min(high, float(pan)))
+        tilt = max(-1.0, min(1.0, float(tilt)))
 
         if not self._abs_pan_tilt_space:
             # Fallback: continuous pulses toward the target.
@@ -676,7 +714,7 @@ class OnvifPTZCamera:
         self.last_command_time = time.monotonic() + 3.5   # the camera keeps moving ~3 s (operator detection)
         if not self._abs_zoom_space:
             return False
-        zoom = max(config.ZOOM_POSITION_MIN, min(config.ZOOM_POSITION_MAX, float(zoom)))
+        zoom = self.safe_zoom(max(config.ZOOM_POSITION_MIN, min(config.ZOOM_POSITION_MAX, float(zoom))))
 
         async def _call():
             request = self.ptz.create_type("AbsoluteMove")

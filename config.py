@@ -223,7 +223,9 @@ EXCLUDED_PAN_RANGES = []
 # inside the software arc. User verified this still points at wildlife only.
 ALLOWED_PAN_RANGE = (0.239861116, 0.735000000)
 WILDLIFE_CENTER_PAN = 0.476055562
-PAN_BOUNDARY_MARGIN = 0.03
+PAN_BOUNDARY_MARGIN = 0.03            # at the patrol zoom (3.85x); narrower in proportion when zoomed in
+PAN_BOUNDARY_MARGIN_MIN = 0.004        # (the camera slows its pan in proportion to the zoom - 0.03 was
+                                       # 1.2 picture widths at 14.7x and held zebras out of the centre)
 # Measured on the SUNBA (wide zoom): speed <=0.10 does NOTHING, 0.15-0.22 crawls
 # (~0.003/s), 0.30 moves ~0.038/s.  The old 0.22 cap meant live tracking could
 # barely pan.  Pan speed also scales down with zoom on this camera.
@@ -633,9 +635,23 @@ PATROL_TWO_ROWS = True                 # out along the plain row, back along the
 # above max_tilt) shows the lodge pool, loungers and towels.  Such views are
 # blurred on the stream/clips/preview, never analysed or saved, the patrol lifts
 # the camera before gliding through them and the tracker will not tilt into them.
-PRIVACY_ZONES = [{"pan": (0.425, 0.745), "max_tilt": -0.97},     # 19/10: widened - whole pool side
-                 {"pan": (0.58, 0.745), "max_tilt": 9.9,          # next to the pool, wider than ~3.4x
+PRIVACY_ZONES = [{"pan": (0.425, 0.80), "max_tilt": -0.97},      # 19/10: widened - whole pool side
+                 {"pan": (0.58, 0.80), "max_tilt": 9.9,           # next to the pool, wider than ~3.4x
                   "min_zoom": 0.025}]                             # it shows at the bottom even at -1.0
+# (27/10: both up to 0.80 - the zoomed-in arc now reaches 0.775, see PRIVACY_EDGE_PAN)
+# Zoom-dependent end of the arc (user 27/10: "ndio ongeza ila pima" - extend it, but measure).
+# Measured 27/10 08:23-08:27 with the camera at pans 0.735-0.785, zooms 0.025/0.10/0.144 and
+# the lowest allowed tilt (-0.972): the lodge deck (planks, railing, chairs) starts at pan
+# ~0.79 at the bottom-left of the picture; pool towels show only at the very bottom when
+# tilted down at the widest zoom (already PRIVACY_ZONES).  So the camera may turn past 0.735
+# only while zoomed in so far that the picture's LEFT edge stays PRIVACY_EDGE_SAFETY short
+# of the deck: 0.735 at 3.9x (as before), ~0.766 at 10.5x, ~0.771 at 14.7x, 0.775 at most
+# (beyond: the near tree with the lodge lanterns, no wildlife view).
+PRIVACY_EDGE_PAN = 0.79
+PRIVACY_EDGE_SAFETY = 0.005
+PRIVACY_PX_PER_PAN_AT_1X = 4740.0      # measured 27/10: 160 px per 0.01 pan at 3.375x
+PRIVACY_FRAME_WIDTH = 1920
+PAN_HIGH_ZOOMED_MAX = 0.775
 # Tilt glide before a station preset (measured 19/10: tilt has two speed levels -
 # <=0.22 = 0.0049/s, >=0.25 = 0.069/s; GotoPreset swings it in under a second)
 PATROL_TILT_GLIDE = True

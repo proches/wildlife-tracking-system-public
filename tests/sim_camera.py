@@ -98,7 +98,7 @@ class SimCamera(OnvifPTZCamera):
 
     def zoom_only(self, zoom):
         """AbsoluteMove of the zoom axis only (pan/tilt untouched), applied at once."""
-        zoom = max(config.ZOOM_POSITION_MIN, min(config.ZOOM_POSITION_MAX, float(zoom)))
+        zoom = self.safe_zoom(max(config.ZOOM_POSITION_MIN, min(config.ZOOM_POSITION_MAX, float(zoom))), pan=self.pan)
         self.log.append(("zoomto", zoom))
         self.zoom = zoom
         return True

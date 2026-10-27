@@ -105,6 +105,31 @@ class CameraBoundaryTests(unittest.TestCase):
         self.assertLess(request.Velocity['PanTilt']['x'], 0)
         self.assertEqual(tracker._search_direction, -1)
 
+    def test_zoomed_in_the_camera_may_turn_past_the_old_arc_end(self):
+        """27/10: zebras/wildebeest left of the water-hole - past 0.735 only while zoomed in."""
+        def at(pan, zoom):
+            self.camera.get_status.return_value = SimpleNamespace(
+                PanTilt=SimpleNamespace(x=pan), Zoom=SimpleNamespace(x=zoom))
+        at(0.745, 0.144)
+        self.assertGreater(self.camera.guard_pan_speed(0.3), 0, "14.7x at 0.745: the deck is far outside")
+        at(0.745, 0.03)
+        self.assertEqual(self.camera.guard_pan_speed(0.3), 0, "3.85x at 0.745: fail closed")
+        at(0.7291, 0.03)
+        self.assertEqual(self.camera.guard_pan_speed(0.3), 0, "the wide arc end is unchanged")
+        low, high, margin = self.camera.pan_limits(0.144)
+        at(high - margin / 2, 0.144)
+        self.assertEqual(self.camera.guard_pan_speed(0.3), 0, "the zoomed-in end holds too")
+        self.assertLess(self.camera.guard_pan_speed(-0.3), 0)
+
+    def test_no_widening_far_left(self):
+        self.camera._last_good_pan = 0.765
+        z = self.camera.safe_zoom(0.03)
+        self.assertGreater(z, 0.03)
+        from utils.privacy import in_privacy_zone
+        self.assertFalse(in_privacy_zone((0.765, -1.0, z)))
+        self.camera._last_good_pan = 0.70
+        self.assertEqual(self.camera.safe_zoom(0.03), 0.03)
+
     def test_small_overshoot_allows_only_slow_inward_recovery(self):
         low, high = config.ALLOWED_PAN_RANGE
         self.position(high + 0.002111137)

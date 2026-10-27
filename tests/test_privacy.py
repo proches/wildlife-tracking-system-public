@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from utils.privacy import in_privacy_zone, path_crosses_privacy, privacy_filter
+from utils.privacy import in_privacy_zone, min_zoom_for_pan, pan_high_for_zoom, path_crosses_privacy, privacy_filter
 
 
 class PrivacyTests(unittest.TestCase):
@@ -44,6 +44,40 @@ class PrivacyTests(unittest.TestCase):
         p._last_pan, p._last_tilt = 0.6244, -0.93
         p._begin_travel()
         self.assertEqual(p.phase, "lift")
+
+
+class ZoomedArcEndTests(unittest.TestCase):
+    """27/10 (user: "ndio ongeza ila pima"): measured with the camera at pans 0.735-0.785 - the
+    lodge deck starts at pan ~0.79 at the bottom-left of the picture.  Past the old arc end
+    (0.735) the camera may turn only while zoomed in so far that it stays out of the picture."""
+
+    def test_wide_views_keep_the_old_arc_end(self):
+        for zoom in (None, 0.0, 0.011, 0.025, 0.03):
+            self.assertAlmostEqual(pan_high_for_zoom(zoom), 0.735, places=6, msg=zoom)
+
+    def test_zoomed_in_it_may_turn_further_but_never_past_the_tree(self):
+        self.assertTrue(0.762 < pan_high_for_zoom(0.10) < 0.770)       # 10.5x
+        self.assertTrue(0.766 < pan_high_for_zoom(0.144) < 0.775)      # 14.7x (zebras 26/10)
+        self.assertAlmostEqual(pan_high_for_zoom(0.49), 0.775, places=6)
+        for zoom in (0.05, 0.1, 0.144, 0.3):
+            pan = pan_high_for_zoom(zoom)
+            self.assertFalse(in_privacy_zone((pan, -1.0, zoom)), zoom)
+
+    def test_a_view_whose_edge_reaches_the_deck_is_private(self):
+        self.assertTrue(in_privacy_zone((0.77, -1.0, 0.03)))           # 3.85x: the deck shows (probe 0.775)
+        self.assertTrue(in_privacy_zone((0.785, -1.0, 0.10)))          # the railing post at the edge (probe)
+        self.assertFalse(in_privacy_zone((0.765, -1.0, 0.144)))        # probe: tree and lanterns only
+        self.assertFalse(in_privacy_zone((0.7249, -1.0, 0.2193)))      # the water-hole preset
+
+    def test_tilting_down_stays_private_in_the_extended_arc(self):
+        self.assertTrue(in_privacy_zone((0.76, -0.90, 0.144)))         # looking down toward the pool
+
+    def test_the_widest_zoom_allowed_at_a_pan(self):
+        self.assertEqual(min_zoom_for_pan(0.70), 0.0)
+        for pan in (0.74, 0.755, 0.77):
+            z = min_zoom_for_pan(pan)
+            self.assertGreaterEqual(pan_high_for_zoom(z) + 1e-9, pan, pan)
+            self.assertFalse(in_privacy_zone((pan, -1.0, z)), pan)
 
 
 if __name__ == "__main__":

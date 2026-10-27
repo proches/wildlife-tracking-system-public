@@ -773,8 +773,7 @@ class PTZTracker:
         try:
             status = self.camera.get_status()
             pan = float(status.PanTilt.x)
-            low, high = config.ALLOWED_PAN_RANGE
-            margin = config.PAN_BOUNDARY_MARGIN
+            low, high, margin = self.camera.pan_limits(getattr(getattr(status, "Zoom", None), "x", None))
             return (requested_speed > 0 and pan >= high - margin) or (requested_speed < 0 and pan <= low + margin)
         except (AttributeError, TypeError, ValueError):
             return False
