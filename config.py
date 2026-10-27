@@ -224,7 +224,7 @@ EXCLUDED_PAN_RANGES = []
 ALLOWED_PAN_RANGE = (0.239861116, 0.735000000)
 WILDLIFE_CENTER_PAN = 0.476055562
 PAN_BOUNDARY_MARGIN = 0.03            # at the patrol zoom (3.85x); narrower in proportion when zoomed in
-PAN_BOUNDARY_MARGIN_MIN = 0.004        # (the camera slows its pan in proportion to the zoom - 0.03 was
+PAN_BOUNDARY_MARGIN_MIN = 0.010        # (the camera slows its pan in proportion to the zoom - 0.03 was
                                        # 1.2 picture widths at 14.7x and held zebras out of the centre)
 # Measured on the SUNBA (wide zoom): speed <=0.10 does NOTHING, 0.15-0.22 crawls
 # (~0.003/s), 0.30 moves ~0.038/s.  The old 0.22 cap meant live tracking could

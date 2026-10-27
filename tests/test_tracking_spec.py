@@ -1141,8 +1141,15 @@ class ArcEndZoomTests(_Isolated):
     HERD = [[40, 460, 110, 515], [193, 450, 275, 520], [390, 540, 480, 600], [550, 540, 650, 598],
             [700, 537, 800, 600], [880, 455, 940, 510]]
 
+    @staticmethod
+    def arc_end(zoom):
+        """Just inside the end of the arc at this zoom, where turning further is blocked
+        (26/10 the camera held at 0.7291; 27/10 the end moved out while zoomed in)."""
+        low, high, margin = SimCamera.pan_limits(zoom)
+        return high - margin / 2
+
     def run_herd(self, herd, results=12, zoom=0.144, lock=2):
-        cam = SimCamera(pan=0.7291, tilt=-1.0, zoom=zoom)
+        cam = SimCamera(pan=self.arc_end(zoom), tilt=-1.0, zoom=zoom)
         tracker = PTZTracker(cam)
         m0 = 1 + config.PTZ_ZOOM_MAG_PER_UNIT * zoom
         zooms = []
@@ -1162,7 +1169,7 @@ class ArcEndZoomTests(_Isolated):
     def test_25_resting_zebras_beyond_the_arc_end_are_not_zoomed_away_from(self):
         cam, tracker, zooms = self.run_herd(self.HERD)
         self.assertTrue(tracker.locked)
-        self.assertAlmostEqual(cam.pan, 0.7291, delta=0.004, msg="the camera left the arc end")
+        self.assertAlmostEqual(cam.pan, self.arc_end(0.144), delta=0.004, msg="the camera left the arc end")
         steps = [b - a for a, b in zip(zooms, zooms[1:]) if b != a]
         self.assertFalse(any(s < 0 for s in steps), f"zoomed OUT of resting zebras: {zooms}")
         self.assertGreater(zooms[-1], 0.144, f"never came closer: {zooms}")
@@ -1170,10 +1177,27 @@ class ArcEndZoomTests(_Isolated):
         x1 = W / 2 + k * (self.HERD[2][0] - W / 2)
         self.assertGreater(x1, 0.04 * W, "the followed zebra was zoomed out of the picture")
 
+    def test_25d_zoomed_in_it_turns_toward_animals_left_of_the_old_arc_end(self):
+        """27/10: wildebeest/zebras left of the water-hole.  At 14.7x the camera now turns past
+        0.735 toward them (the lodge deck stays out of the picture); at 3.85x it still holds."""
+        for zoom, turns in ((0.144, True), (0.03, False)):
+            cam = SimCamera(pan=0.7291, tilt=-1.0, zoom=zoom)
+            tracker = PTZTracker(cam)
+            tracker.observation_patrol = None
+            tracker.pose_hint = cam.get_pose()
+            tracker.update([animal([300, 500, 420, 590], tid=3, species="wildebeest")], W, H, fresh=True,
+                           now=100.0, capture_pose=cam.get_pose())
+            moved = [e for e in pulses(cam) if e[1] != 0.0]
+            if turns:
+                self.assertTrue(moved and moved[0][1] > 0, "zoomed in, it still held at 0.7291")
+                self.assertGreater(cam.pan, 0.7291)
+            else:
+                self.assertEqual(moved, [], "wide, it turned past the old arc end (the deck would show)")
+
     def test_25c_the_view_widens_before_a_walking_animal_reaches_the_edge(self):
         """Held at the arc end, a zebra walks toward the picture's edge ~70 px per result: the
         zoom must widen while it is still inside, not once it is already cut off."""
-        cam = SimCamera(pan=0.7291, tilt=-1.0, zoom=0.2)
+        cam = SimCamera(pan=self.arc_end(0.2), tilt=-1.0, zoom=0.2)
         tracker = PTZTracker(cam)
         tracker.observation_patrol = None
         first_out_x1 = None

@@ -197,7 +197,13 @@ Tool inahifadhi mtazamo huo pamoja na preset za vituo, na kuandika `ptz_presets.
   - **Kamera iliyumba juu-chini:** misukumo 166 ya tilt kwa dakika 24, kwa makosa ya ±50 px. Kila mwendo uliifanya AI isubiri picha tulivu (tokeo 1 kwa sekunde 46), kisha lock ikapotea na patrol ikarudi. Sasa bendi ya wima ni 0.20 (`FRAME_CENTER_DEADZONE_Y`). Jaribio: `test_26`.
   - **OpenCV 5:** `cv2.phaseCorrelate` ikipewa dirisha la Hanning inazidisha picha zote mbili kwa dirisha hilo moja kwa moja (in-place). Picha ya rejea ya ManualLook ilififia kila kipimo (resp 0.96 → 0.59 baada ya vipimo 7). Sasa nakala ndiyo inapitishwa.
   - `logs/pipeline_trace.jsonl` sasa ina `dropped`: kila box iliyotupwa, sababu yake, alama yake na lebo yake.
-  - Mpaka wa arc (0.735) haujabadilishwa. Kuuongeza ni uamuzi wa mmiliki (faragha ya bwawa la lodge).
+  - **27/10, mpaka wa arc unafuata zoom** (mmiliki: "ndio ongeza ila pima"). Kipimo kilifanyika tracker ikiwa imesimama: pan 0.735–0.785, zoom 0.025/0.10/0.144, tilt −1.0 na −0.972.
+    - Deck ya lodge (mbao, reli, viti) inaanza karibu pan 0.79, kwenye kona ya chini-kushoto ya picha. Zaidi ya ~0.755, kwenye zoom ya kufuatilia, picha inajazwa na mti ulio karibu na kamera, wenye taa za lodge.
+    - Mpaka sasa unategemea zoom (`utils/privacy.pan_high_for_zoom`): pana (3.85x) unabaki 0.735, kwenye 10.5x ni ~0.766, kwenye 14.7x ni ~0.771, na hauzidi 0.775 kamwe. Ukingo wa kushoto wa picha unabaki 0.005 kabla ya deck.
+    - Kamera iliyo mbali kushoto haizoom nje (`safe_zoom`).
+    - Pozi lolote ambalo ukingo wa picha unafika deck linahesabiwa private (linafifishwa, halichambuliwi).
+    - Margin ya mpaka inapungua kadiri zoom inavyoongezeka (kiwango cha chini 0.010).
+    - Majaribio: `ZoomedArcEndTests`, `test_25d`. Picha za kipimo zimefutwa.
 - **26/10, ndege wanaoruka.** Ndege 4 kati ya 8 waliokaguliwa kwa macho walikuwa ndege halisi wanaoruka, na kila mmoja alionekana mara moja tu (uthibitisho unahitaji mara 2), kwa hiyo wote walitupwa. Sasa `tracking/flight.py` inalinganisha picha za sekunde 0.2–1 kabla na baada ya picha iliyochambuliwa. Ndege aliyehama anahifadhiwa kama `BIRD_IN_FLIGHT` (events.csv, detections.csv, `logs/review/*_bird_flight.jpg`), bila kumfuata. Usiku "ndege" wanatupwa (wote waliokaguliwa walikuwa visiki). Kwenye box 1 926 za nasibu kwenye video halisi za mchana, miti na nyasi hazikutoa kosa hata moja. Majaribio: `tests/test_bird_flight.py`.
 - **26/10 13:09, nyani hakuwekwa katikati.** Kosa lilelile la 23/10, sehemu ya pili: approach (kumkaribia mnyama mdogo aliyethibitishwa) ilitumia picha ya SASA kama rejea ya box ya picha iliyochambuliwa wakati patrol bado inatembea - ilizunguka 0.03 kupita nyani (ambaye alikuwa amesimama) na kuzoom akiwa nje ya picha. Sasa approach inatumia picha iliyochambuliwa na inasimamisha patrol kwanza. Jaribio: `test_23`.
 - **23/10 12:02, kamera "inacheza" badala ya kutulia kwenye swala.**
