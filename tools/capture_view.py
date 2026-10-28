@@ -69,7 +69,7 @@ def main():
     ap.add_argument("--focus-seconds", type=float, default=3.0, help="autofocus time after each zoom")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
-    if any(TRACKER in scripts(c) for _, c in python_processes()):
+    if any(TRACKER in scripts(c) for _, c, *_ in python_processes()):
         print("main.py is running - stop the tracker first (two programs must not steer the camera)")
         return 1
     for z in a.zooms:

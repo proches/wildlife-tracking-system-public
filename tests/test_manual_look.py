@@ -111,6 +111,79 @@ class AutoInvestigateTests(unittest.TestCase):
         rt._maybe_investigate(cam, tracker, patrol, None, frame, (0.345, -0.80, 0.03), 200.0, S)
         self.assertIsNone(rt.manual)                     # same spot: not again within 10 min
 
+    @staticmethod
+    def _vetoed(box, det):
+        """An AI result whose only box SpeciesNet vetoed as "blank" (28/10 trace entries)."""
+        return {"frame": np.zeros((H, W, 3), np.uint8), "pose": (0.5721, -1.0, 0.1114),
+                "metrics": {"dropped": [{"why": "non_wildlife", "box": box, "det": det, "src": "custom_tile",
+                                         "label": "blank", "label_conf": 1.0, "cached": False}]}}
+
+    def test_operator_view_spot_vetoed_twice_gets_one_closer_look(self):
+        """28/10 10:09-10:14: elephants behind branches in an operator view, every box "blank"."""
+        from types import SimpleNamespace
+        from main import Runtime
+        from tracking.manual_look import OperatorHold
+        cam = FakeCam(np.zeros((1200, 2200, 3), np.uint8))
+        tracker = SimpleNamespace(locked=False, manual_active=False)
+        patrol = SimpleNamespace(moving=False, motion=SimpleNamespace(target=None))
+        rt = Runtime()
+        hold = OperatorHold((0.5721, -1.0, 0.1114))
+        rt.manual = hold
+        S = SimpleNamespace(tracks=[])
+        pose = (0.5721, -1.0, 0.1114)
+        res = self._vetoed([627, 599, 715, 675], 0.277)
+        rt._maybe_investigate(cam, tracker, patrol, None, res["frame"], pose, 100.0, S, res)
+        self.assertIs(rt.manual, hold)                   # once is not enough
+        res = self._vetoed([200, 200, 260, 250], 0.30)
+        rt._maybe_investigate(cam, tracker, patrol, None, res["frame"], pose, 120.0, S, res)
+        self.assertIs(rt.manual, hold)                   # another spot is not a repeat
+        res = self._vetoed([630, 601, 705, 675], 0.249)  # the same spot 56 s later
+        rt._maybe_investigate(cam, tracker, patrol, None, res["frame"], pose, 156.0, S, res)
+        self.assertIsInstance(rt.manual, ManualLook)
+        self.assertTrue(rt.manual.auto)
+        self.assertIs(rt.manual.back_to, hold)
+        reset = []
+        patrol.reset = lambda: reset.append(1)
+        rt._look_done(rt.manual, tracker, patrol)        # nothing confirmed: the person's watch goes on
+        self.assertIs(rt.manual, hold)
+        self.assertEqual(reset, [])
+
+    def test_vetoed_spots_in_patrol_views_or_at_night_are_not_looked_at(self):
+        """65 h of trace: 100 such repeats in patrol views, mostly the same bushes every hour."""
+        from types import SimpleNamespace
+        from main import Runtime
+        from tracking.manual_look import OperatorHold
+        cam = FakeCam(np.zeros((1200, 2200, 3), np.uint8))
+        tracker = SimpleNamespace(locked=False, manual_active=False)
+        patrol = SimpleNamespace(moving=False, motion=SimpleNamespace(target=None))
+        pose = (0.5721, -1.0, 0.1114)
+        rt, S = Runtime(), SimpleNamespace(tracks=[])
+        for t in (100.0, 130.0, 160.0):
+            res = self._vetoed([627, 599, 715, 675], 0.4)
+            rt._maybe_investigate(cam, tracker, patrol, None, res["frame"], pose, t, S, res)
+        self.assertIsNone(rt.manual)
+        rt, S = Runtime(), SimpleNamespace(tracks=[])
+        rt.manual = hold = OperatorHold(pose)
+        for t in (100.0, 130.0, 160.0):
+            res = self._vetoed([627, 599, 715, 675], 0.4)
+            res["metrics"]["frame_quality"] = {"low_light": True}
+            rt._maybe_investigate(cam, tracker, patrol, None, res["frame"], pose, t, S, res)
+        self.assertIs(rt.manual, hold)
+
+    def test_a_finished_look_without_an_operator_view_resumes_the_patrol(self):
+        from types import SimpleNamespace
+        from main import Runtime
+        rng = np.random.default_rng(3)
+        cam = FakeCam(np.kron(rng.integers(0, 255, (130, 220, 3), dtype=np.uint8), np.ones((20, 20, 1), np.uint8)))
+        rt = Runtime()
+        rt.manual = ManualLook(cam, (900, 500), cam.frame(), (0.5, -1.0, 0.03))
+        reset = []
+        tracker = SimpleNamespace(locked=False, manual_active=True)
+        rt._look_done(rt.manual, tracker, SimpleNamespace(reset=lambda: reset.append(1)))
+        self.assertIsNone(rt.manual)
+        self.assertFalse(tracker.manual_active)
+        self.assertEqual(reset, [1])
+
     def test_moving_patrol_or_weak_blob_is_not_investigated(self):
         from types import SimpleNamespace
         from main import Runtime

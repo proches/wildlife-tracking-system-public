@@ -46,6 +46,7 @@ class ManualLook:
         self.approach = False          # set by main: going closer to an ALREADY confirmed animal
         self.auto = False              # set by main: an automatic look at something half-seen
         self.operator = False          # set by main: the operator clicked an animal
+        self.back_to = None            # set by main: the OperatorHold this automatic look interrupted
         self.hold_seconds = config.MANUAL_HOLD_SECONDS if hold_seconds is None else float(hold_seconds)
         self.point = (float(point[0]), float(point[1]))
         self.h, self.w = frame.shape[:2]

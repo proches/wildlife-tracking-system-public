@@ -396,10 +396,7 @@ class Runtime:
             if manual.tick(frame, frame_t, pose):
                 S.last_motion = t0
             if manual.done:
-                self.manual = manual = None
-                tracker.manual_active = False
-                if patrol is not None:
-                    patrol.reset()
+                manual = self._look_done(manual, tracker, patrol)
         self._mark(S, "operator / look")
 
         self._watch_motion(tracker, patrol, frame, frame_t, pose, t0, S)
@@ -931,6 +928,42 @@ class Runtime:
                         float(d.get("det_confidence") or 0.0), d["box"][2] - d["box"][0], res["pose"][0],
                         abs(dt), score)
 
+    def _look_done(self, manual, tracker, patrol):
+        """A look or an operator hold has ended: back to the operator view it interrupted, else patrol."""
+        back = getattr(manual, "back_to", None)
+        if back is not None:
+            # an automatic look inside an operator view: the person's watch goes on (its timer ran on)
+            logger.info("Automatic look finished - back to the operator view")
+            self.manual = back
+            return back
+        self.manual = None
+        tracker.manual_active = False
+        if patrol is not None:
+            patrol.reset()
+        return None
+
+    @staticmethod
+    def _vetoed_repeats(S, res, t0):
+        """Boxes the classifier vetoed as "blank" that come back at the same spot of an unmoved view."""
+        if not config.OPERATOR_VETO_LOOK or res is None or res.get("pose") is None:
+            return []
+        pose = res["pose"]
+        seen = [v for v in getattr(S, "vetoed", []) if t0 - v[0] <= config.OPERATOR_VETO_REPEAT_SECONDS]
+        again = []
+        for d in (res.get("metrics") or {}).get("dropped") or []:
+            if (d.get("why") != "non_wildlife" or d.get("label") != "blank"
+                    or float(d.get("det", 0.0)) < config.OPERATOR_VETO_LOOK_MIN_SCORE):
+                continue
+            x1, y1, x2, y2 = d["box"]
+            cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+            if any(t < t0 and abs(p - pose[0]) < 0.002 and abs(z - pose[2]) < 0.005
+                   and abs(x - cx) < 150 and abs(y - cy) < 150 for t, p, z, x, y in seen):
+                again.append({"box": list(d["box"]), "det_confidence": float(d["det"]),
+                              "species": "vetoed as blank", "class_id": 0})
+            seen.append((t0, pose[0], pose[2], cx, cy))
+        S.vetoed = seen
+        return again
+
     def _maybe_investigate(self, camera, tracker, patrol, focus, frame, pose, t0, S, res=None):
         """Zoom in by itself on something the AI keeps half-seeing.
 
@@ -947,9 +980,12 @@ class Runtime:
         if (not config.AUTO_INVESTIGATE or tracker.locked or frame is None or pose is None
                 or isinstance(self.manual, ManualLook) or pose[2] >= config.AUTO_INVESTIGATE_MAX_ZOOM):
             return
-        still = isinstance(self.manual, OperatorHold) or (patrol is not None and not patrol.moving)
+        operator_view = isinstance(self.manual, OperatorHold)
+        still = operator_view or (patrol is not None and not patrol.moving)
         night = bool(((res or {}).get("metrics") or {}).get("frame_quality", {}).get("low_light"))
         named = [d for d in S.tracks if worth_a_closer_look(d, night)] if res is not None else []
+        # (recorded on every result, also during the cooldown)
+        vetoed = self._vetoed_repeats(S, res, t0) if operator_view and not night else []
         if (not still and not named) or t0 - getattr(S, "last_investigate", -1e9) < config.AUTO_INVESTIGATE_COOLDOWN:
             return
         cands = [d for d in S.tracks if not d.get("track_confirmed")
@@ -959,6 +995,10 @@ class Runtime:
             cands = named                 # moving: only what the classifier named
         else:
             cands += [d for d in named if d not in cands]
+        if not cands and vetoed:
+            # a person aimed the camera here and the site model keeps boxing the same spot that
+            # SpeciesNet calls "blank" (28/10 elephants behind branches): look closer once
+            cands = vetoed
         motion = getattr(S, "still_motion", None)
         if (not cands and config.MOTION_CUE_INVESTIGATE and motion is not None
                 and t0 - motion[0] <= 1.5):
@@ -1003,9 +1043,11 @@ class Runtime:
             patrol.motion.target = None
         if moving:
             camera.stop()                 # leave the sweep where it is
+        held = self.manual if operator_view else None
         self.manual = ManualLook(camera, (cx, cy), ref, pose, focus=focus,
                                  hold_seconds=config.AUTO_INVESTIGATE_HOLD_SECONDS, zoom_factor=factor)
         self.manual.auto = True
+        self.manual.back_to = held        # afterwards the operator's watch goes on, not the patrol
         tracker.manual_active = True      # the patrol must not move the camera this tick
 
     def _watch_operator(self, camera, tracker, patrol, pose, t0, S):

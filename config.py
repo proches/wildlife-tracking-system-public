@@ -519,6 +519,15 @@ LOOK_MAX_ZOOM = 0.25                   # automatic looks / approaches stop at ~2
 TRACK_MAX_ZOOM = 0.28                  # the tracker never zooms in beyond ~27x (sharp, enough detail)
 AUTO_INVESTIGATE_COOLDOWN = 60.0
 AUTO_INVESTIGATE_REPEAT_SECONDS = 600.0
+# 28/10 10:09-10:14: the operator held the camera on an elephant herd behind branches for 5 min
+# (11.6x, ~25 px per animal).  MegaDetector saw nothing (also on native 640-px crops), the site
+# model boxed them 8 times (0.18-0.50) and SpeciesNet called every box "blank" (0.997+), so
+# nothing was ever looked at closer.  In an OPERATOR view a spot the classifier vetoes twice now
+# gets one automatic closer look.  65 h of trace: 5 such repeats in operator views, 100 in patrol
+# views (mostly the same bushes every hour) - so not in patrol views.
+OPERATOR_VETO_LOOK = True
+OPERATOR_VETO_LOOK_MIN_SCORE = 0.20
+OPERATOR_VETO_REPEAT_SECONDS = 90.0    # the herd's spot came back after 56 s
 SHOW_CANDIDATES_ON_OVERLAY = False     # YouTube stream: confirmed animals only
 SHOW_CANDIDATES_ON_PREVIEW = True
 # Click-to-zoom from the preview window (tracking/manual_look.py)
