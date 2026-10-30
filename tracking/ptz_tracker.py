@@ -107,6 +107,9 @@ class PTZTracker:
         self.group_offset = (0.0, 0.0)     # group centre minus the locked animal's centre (px)
         self._group_ref_w = None           # locked box width when that offset was measured
         self._hold_until = -1e9      # after losing a target: watch this view until then
+        self._centred = False        # pan hysteresis: the target was brought to the centre - hold
+        self._last_ex_sign = 0
+        self._last_pan_dir, self._last_pan_t = 0, -1e9
 
         self.locked_box = None
         self.locked_track_id = None
@@ -310,7 +313,7 @@ class PTZTracker:
                 if (abs(aim_x) > 0.6 * frame_width / 2 or (walking and self.missed_frames >= 2)) else 0.0)
         if self.pose_hint[2] <= config.PATROL_SWEEP_ZOOM + 0.01:
             zoom = 0.0
-        pan, _, pulse = plan_pulse(aim_x, 0.0, frame_width, 1080, zoom=self.pose_hint[2])
+        pan, _, pulse = plan_pulse(self._hold_x(aim_x, frame_width), 0.0, frame_width, 1080, zoom=self.pose_hint[2])
         pan = self.camera.guard_pan_speed(pan)
         if pan == 0.0 and zoom == 0.0:
             return True
@@ -320,10 +323,42 @@ class PTZTracker:
         self._command("coast", pan, 0.0, zoom, pulse)
         return True
 
-    def _command(self, source, pan, tilt, zoom, pulse, box=None, frame_width=1920, frame_height=1080):
+    def _hold_x(self, ex, frame_width):
+        """Pan hysteresis on the horizontal offset ``ex`` (px from the centre).  Centred, or
+        just past the centre (an overshoot), the camera holds until the offset exceeds
+        TRACK_HOLD_DEADZONE; only then does it correct again, back to FRAME_CENTER_DEADZONE."""
+        e = abs(ex) / (frame_width / 2.0)
+        sign = (ex > 0) - (ex < 0)
+        if e > config.TRACK_HOLD_DEADZONE:
+            self._centred = False
+        elif e <= config.FRAME_CENTER_DEADZONE or (sign and self._last_ex_sign and sign != self._last_ex_sign):
+            self._centred = True
+        self._last_ex_sign = sign
+        return 0.0 if self._centred else ex
+
+    def _reversal_blocked(self, pan, err=None):
+        """A pan pulse the other way within TRACK_REVERSE_HOLD_SECONDS of the last one is the
+        ping-pong of 29/10 - drop it, unless the animal is really leaving the picture."""
+        if pan == 0.0:
+            return False
+        now = getattr(self, "_now", None)
+        now = time.monotonic() if now is None else now
+        d = 1 if pan > 0 else -1
+        if (self._last_pan_dir and d != self._last_pan_dir
+                and now - self._last_pan_t < config.TRACK_REVERSE_HOLD_SECONDS
+                and (err is None or abs(err) < config.TRACK_REVERSE_OVERRIDE)):
+            return True
+        self._last_pan_dir, self._last_pan_t = d, now
+        return False
+
+    def _command(self, source, pan, tilt, zoom, pulse, box=None, frame_width=1920, frame_height=1080, err=None):
         """Every tracking PTZ command goes through here: traced, and a camera error stops
         the motion instead of killing the control loop (it is logged, not swallowed)."""
         pan, tilt, zoom, pulse = float(pan), float(tilt), float(zoom), float(pulse)   # no numpy types to ONVIF
+        if self._reversal_blocked(pan, err):
+            pan = 0.0
+            if tilt == 0.0 and zoom == 0.0:
+                return False
         rec = {"source": source, "cmd": [round(pan, 3), round(tilt, 3), round(zoom, 3), round(pulse, 2)],
                "pose": None if self.pose_hint is None else [round(float(v), 4) for v in self.pose_hint]}
         if box is not None:
@@ -409,9 +444,11 @@ class PTZTracker:
             # back to that one animal between AI results
             k = max(0.5, min(2.0, (box[2] - box[0]) / self._group_ref_w))
             cx, cy = cx + self.group_offset[0] * k, cy + self.group_offset[1] * k
+        self._now = now
         zoom = self.pose_hint[2] if self.pose_hint is not None else None
-        pan, tilt, pulse = plan_pulse(cx - frame_width / 2.0, cy - frame_height / 2.0, frame_width, frame_height,
-                                      zoom=zoom)
+        ex = cx - frame_width / 2.0
+        pan, tilt, pulse = plan_pulse(self._hold_x(ex, frame_width), cy - frame_height / 2.0,
+                                      frame_width, frame_height, zoom=zoom)
         if tilt < 0 and self.pose_hint is not None:
             from utils.privacy import in_privacy_zone
             p = self.pose_hint
@@ -432,7 +469,8 @@ class PTZTracker:
             return False                        # inside the deadband (or at the arc limit)
         self._flow_cmd_t = now
         # NOT view_changed: these short pulses must not stop the AI from looking
-        return self._command("flow", pan, tilt, 0.0, pulse, box, frame_width, frame_height)
+        return self._command("flow", pan, tilt, 0.0, pulse, box, frame_width, frame_height,
+                             err=ex / (frame_width / 2.0))
 
     def _on_target(self, candidate, frame_width, frame_height, now, animals=None):
         was_searching = self.searching
@@ -623,6 +661,9 @@ class PTZTracker:
             aim_y = (box_cy + config.TRACK_LEAD * vy) - frame_height / 2
         else:
             aim_y = box_cy - frame_height / 2      # world-based pan aim: no image-velocity lead
+        aim_err = aim_x / (frame_width / 2)
+        if not coast:
+            aim_x = self._hold_x(aim_x, frame_width)
         target_pan, target_tilt, pulse = plan_pulse(aim_x, aim_y, frame_width, frame_height,
                                                     zoom=self.pose_hint[2] if self.pose_hint else None)
 
@@ -687,7 +728,7 @@ class PTZTracker:
         if target_zoom != 0.0 and self.focus is not None:
             self.focus.prepare_for_motion()
         if allowed_pan != 0.0 or target_tilt != 0.0:
-            self._command("ai", allowed_pan, target_tilt, 0.0, pulse, box, frame_width, frame_height)
+            self._command("ai", allowed_pan, target_tilt, 0.0, pulse, box, frame_width, frame_height, err=aim_err)
         if target_zoom != 0.0:
             self._zoom_step(1 if target_zoom > 0 else -1)
 
@@ -819,6 +860,8 @@ class PTZTracker:
         self.group_count, self.group_box, self.group_offset, self._group_ref_w = 0, None, (0.0, 0.0), None
         self._motion_track_id, self._same_id_sightings, self.locked_pose = None, 0, None
         self._others_hist = []
+        self._centred, self._last_ex_sign = False, 0
+        self._last_pan_dir, self._last_pan_t = 0, -1e9
 
     def _stop_motion(self):
         self._pan_speed = self._tilt_speed = self._zoom_speed = 0.0

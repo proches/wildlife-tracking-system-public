@@ -1,0 +1,10 @@
+[Unit]
+Description=Melia git auto-sync (commit + push detections to GitHub)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Projects/wildlife-tracking-system
+ExecStart=%h/Projects/wildlife-tracking-system/venv/bin/python tools/git_autosync.py --reason scheduled
+StandardOutput=append:%h/Projects/wildlife-tracking-system/logs/autosync_console.log
+StandardError=inherit

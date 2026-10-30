@@ -270,6 +270,14 @@ FRAME_CENTER_DEADZONE = 0.06
 # result in 46 s: the lock was lost and the patrol took over).  Height in the picture matters
 # far less than staying still: the vertical band is wider.
 FRAME_CENTER_DEADZONE_Y = 0.20
+# 29/10 18:13-18:19, impala group at the water-hole (Linux run): 70 pan pulses in 4 min, the
+# direction flipping almost every pulse for offsets of only +-0.07..0.15 - the AI aim and the
+# visual follow took turns correcting each other's overshoot, the picture shook and the lock was
+# lost.  Once centred (or after crossing the centre) the camera now HOLDS until the animal is
+# this far off-centre, and never turns back the other way sooner than TRACK_REVERSE_HOLD_SECONDS.
+TRACK_HOLD_DEADZONE = 0.22
+TRACK_REVERSE_HOLD_SECONDS = 3.0
+TRACK_REVERSE_OVERRIDE = 0.45          # ...unless the animal is really leaving (this far off-centre)
 PAN_TILT_GAIN = 0.70
 MAX_PAN_TILT_SPEED = 0.30   # tracking: slow level for small offsets, ~7 deg/s only for a target far off-centre
 ZOOM_GAIN = 0.45
@@ -345,7 +353,8 @@ EVENTS_CSV = "logs/events.csv"
 SYSTEM_HEALTH_JSON = "logs/system_health.json"
 SAVE_LOW_CONFIDENCE_EVERY_SECONDS = 2.0
 LOW_CONFIDENCE_MIN_AREA_RATIO = 0.0004
-SHOW_LIVE_PREVIEW = True
+# WILDLIFE_PREVIEW=0: no preview window (deploy/linux/start_tracker.sh, when no desktop is logged in)
+SHOW_LIVE_PREVIEW = os.environ.get("WILDLIFE_PREVIEW", "1") != "0"
 
 # --- Tourism / event highlights ---
 EVENTS_ENABLED = True

@@ -1,0 +1,17 @@
+[Unit]
+Description=Melia Serengeti Wildlife AI tracker (main.py)
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=%h/Projects/wildlife-tracking-system/deploy/linux/start_tracker.sh
+# main.py stops cleanly on Ctrl-C (camera stopped, files closed)
+KillSignal=SIGINT
+TimeoutStopSec=30
+Restart=always
+RestartSec=20
+StandardOutput=append:%h/Projects/wildlife-tracking-system/logs/tracker_console.log
+StandardError=inherit
+
+[Install]
+WantedBy=default.target

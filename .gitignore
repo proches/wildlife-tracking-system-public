@@ -28,6 +28,7 @@ runs/
 .venv/
 .venv-*/
 .venv313/
+venv/
 
 # training data: about 8 GB.  LILA Snapshot Serengeti can be downloaded again
 # (training/build_lila_serengeti.py); keep only the small hand-checked set

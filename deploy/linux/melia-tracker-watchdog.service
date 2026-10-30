@@ -1,0 +1,6 @@
+[Unit]
+Description=Melia tracker watchdog (restarts a frozen or stopped tracker)
+
+[Service]
+Type=oneshot
+ExecStart=%h/Projects/wildlife-tracking-system/deploy/linux/watchdog.sh

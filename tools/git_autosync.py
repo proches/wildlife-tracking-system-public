@@ -38,7 +38,8 @@ def log(msg):
 
 def git(*args, timeout=300, stdin=None):
     env = dict(os.environ, GCM_INTERACTIVE="never", GIT_TERMINAL_PROMPT="0", GIT_EDITOR="true")
-    return subprocess.run(["git", "-c", "credential.helper=manager", *args], cwd=ROOT, input=stdin,
+    helper = ["-c", "credential.helper=manager"] if os.name == "nt" else []    # Linux: gh auth setup-git
+    return subprocess.run(["git", *helper, *args], cwd=ROOT, input=stdin,
                           capture_output=True, text=True, timeout=timeout, env=env, creationflags=NO_WINDOW)
 
 

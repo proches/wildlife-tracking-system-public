@@ -150,6 +150,27 @@ class AcquireAndCentreTests(_Isolated):
         self.assertFalse(tracker.follow_box(box, W, H, now=6.0), "the visual follow moved inside the deadband")
         self.assertEqual(pulses(cam), [])
 
+    def test_03b_centred_target_jitter_does_not_ping_pong(self):
+        # 29/10 18:13-18:19: impala resting at the water-hole, box offsets jumping -0.15..+0.15
+        # between flow / AI looks - the camera pulsed left, right, left about once a second
+        cam, tracker, patrol, rt, S = self.machine()
+        tracker.pose_hint = cam.get_pose()
+        half = config.TRACK_TARGET_PX / 2
+
+        def at(off):
+            cx = W / 2 + off * W / 2
+            return [cx - half, H / 2 - half * 0.8, cx + half, H / 2 + half * 0.8]
+        self.step(tracker, patrol, rt, S, [animal(at(0.0))], 5.0)
+        self.assertTrue(tracker.locked)
+        for k, off in enumerate([-0.15, 0.12, -0.10, 0.15, -0.12, 0.10, -0.15, 0.12]):
+            tracker.follow_box(at(off), W, H, now=6.0 + k)
+        self.assertEqual(pulses(cam), [], "a resting animal jittering near the centre moved the camera")
+        # really off-centre: one correction, and no immediate turn back the other way
+        tracker.follow_box(at(-0.35), W, H, now=20.0)
+        tracker.follow_box(at(0.15), W, H, now=21.0)
+        pans = [e[1] for e in pulses(cam) if e[1] != 0.0]
+        self.assertEqual(len(pans), 1, f"expected one correction, got {pans}")
+
 
 # ============================================================ 4-5, 9-10: the integrated loop
 class WorldLoopTests(_Isolated):
